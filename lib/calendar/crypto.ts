@@ -1,0 +1,4 @@
+import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
+function key(){const k=Buffer.from(process.env.CALENDAR_TOKEN_ENCRYPTION_KEY||'','base64');if(k.length!==32)throw Error('캘린더 암호화 키 설정이 필요합니다.');return k}
+export function encryptToken(token:string){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key(),iv);const data=Buffer.concat([cipher.update(token,'utf8'),cipher.final()]);return ['v1',iv.toString('base64url'),cipher.getAuthTag().toString('base64url'),data.toString('base64url')].join('.')}
+export function decryptToken(encrypted:string){const [version,iv,tag,data]=encrypted.split('.');if(version!=='v1'||!iv||!tag||!data)throw Error('잘못된 캘린더 연결 정보입니다.');const cipher=createDecipheriv('aes-256-gcm',key(),Buffer.from(iv,'base64url'));cipher.setAuthTag(Buffer.from(tag,'base64url'));return Buffer.concat([cipher.update(Buffer.from(data,'base64url')),cipher.final()]).toString('utf8')}

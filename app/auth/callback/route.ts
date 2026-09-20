@@ -1,0 +1,16 @@
+import {NextResponse} from 'next/server';
+import {sessionClient,supabaseConfigured} from '@/lib/supabase/server';
+import {saveCalendarConnection} from '@/lib/calendar/server';
+export async function GET(request:Request){
+  const origin=process.env.APP_URL||new URL(request.url).origin;
+  const code=new URL(request.url).searchParams.get('code');
+  if(code&&supabaseConfigured()){
+    const sb=await sessionClient();const {data,error}=await sb.auth.exchangeCodeForSession(code);
+    if(!error&&data.user){
+      if(data.session?.provider_refresh_token){try{await saveCalendarConnection(data.user.id,data.session.provider_refresh_token)}catch{return NextResponse.redirect(new URL('/?auth_error=calendar',origin))}}
+      const next=new URL(request.url).searchParams.get('next');
+      return NextResponse.redirect(new URL(next&&/^\/book\/[a-f0-9-]{36}$/.test(next)?next:'/',origin));
+    }
+  }
+  return NextResponse.redirect(new URL('/?auth_error=callback',origin));
+}

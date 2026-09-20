@@ -1,14 +1,58 @@
-import {env} from 'cloudflare:workers';
-import {z} from 'zod';
+import {after} from 'next/server';
+import {currentUser,adminClient,supabaseConfigured} from '@/lib/supabase/server';
+import {defaultWorkspace,workspacePatch,validateNewBooking} from '@/lib/workspace';
+import {integrationStatus,notificationMode} from '@/lib/notifications/providers';
+import {processNotifications} from '@/lib/notifications/worker';
+import {ownerBusy} from '@/lib/calendar/server';
+import {overlaps} from '@/lib/calendar/google';
+export const runtime='nodejs';
 export const dynamic='force-dynamic';
-const event=z.object({id:z.string().max(80),title:z.string().min(1).max(60),desc:z.string().max(150),duration:z.union([z.literal(15),z.literal(30),z.literal(60)]),color:z.enum(['blue','purple','orange','green']),team:z.boolean(),active:z.boolean()});
-const booking=z.object({id:z.string().uuid(),eventId:z.string().max(80),title:z.string().max(60),duration:z.number().int().min(15).max(60),day:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),name:z.string().min(1).max(80),email:z.string().email().max(200)});
-const patch=z.object({events:z.array(event).max(100).optional(),bookings:z.array(booking).max(500).optional(),hours:z.array(z.boolean()).length(7).optional(),range:z.tuple([z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)]).optional(),revision:z.number().int().min(0)});
-function db(){if(!env.DB)throw Error('DB unavailable');return env.DB}
-function identity(r:Request){const id=r.headers.get('cookie')?.match(/(?:^|;\s*)moa_demo=([a-f0-9-]{36})(?:;|$)/)?.[1];return id||null}
-const response=(data:any,status=200,headers:any={})=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...headers}});
-export async function GET(r:Request){try{const old=identity(r),id=old||crypto.randomUUID();const row=await db().prepare('SELECT data, revision FROM workspaces WHERE id = ?').bind(id).first<{data:string;revision:number}>();return response({...JSON.parse(row?.data||'{}'),revision:row?.revision||0},200,old?{}:{'Set-Cookie':`moa_demo=${id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${new URL(r.url).protocol==='https:'?'; Secure':''}`})}catch(e){console.error('Workspace read failed');return response({error:'저장소를 불러오지 못했습니다.'},503)}}
-const minutes=(s:string)=>Number(s.slice(0,2))*60+Number(s.slice(3));
-export async function POST(r:Request){try{if(r.headers.get('origin')!==new URL(r.url).origin)return response({error:'Forbidden'},403);const id=identity(r);if(!id)return response({error:'데모 공간을 먼저 불러오세요.'},401);const raw=await r.text();if(raw.length>250000)return response({error:'Too large'},413);const parsed=patch.safeParse(JSON.parse(raw));if(!parsed.success)return response({error:'입력값을 확인해 주세요.'},400);const {revision,...changes}=parsed.data;const row=await db().prepare('SELECT data, revision FROM workspaces WHERE id = ?').bind(id).first<{data:string;revision:number}>();if((row?.revision||0)!==revision)return response({error:'다른 변경사항이 있습니다. 새로고침해 주세요.'},409);const next={...JSON.parse(row?.data||'{}'),...changes};if(next.range&&next.range[0]>=next.range[1])return response({error:'시간 범위를 확인해 주세요.'},400);if(next.bookings){const sorted=[...next.bookings].sort((a,b)=>(a.day+a.time).localeCompare(b.day+b.time));for(let i=0;i<sorted.length;i++){const b=sorted[i],prior=sorted[i-1];if(prior&&prior.day===b.day&&minutes(prior.time)+prior.duration>minutes(b.time))return response({error:'이미 예약된 시간입니다.'},409);const original=JSON.parse(row?.data||'{}').bookings||[];if(!original.some((o:any)=>o.id===b.id)){const ev=next.events?.find((e:any)=>e.id===b.eventId);if(ev&&(!ev.active||ev.duration!==b.duration))return response({error:'예약 페이지 설정이 변경되었습니다.'},409);const weekday=new Date(b.day+'T12:00:00+09:00').getUTCDay();const hh=next.hours||[false,true,true,true,true,true,false],rr=next.range||['09:00','18:00'];if(!hh[weekday]||minutes(b.time)<minutes(rr[0])||minutes(b.time)+b.duration>minutes(rr[1])||new Date(b.day+'T'+b.time+':00+09:00')<=new Date())return response({error:'예약할 수 없는 시간입니다.'},400)}}}
-const out=await db().prepare('INSERT INTO workspaces (id,data,revision) VALUES (?,?,1) ON CONFLICT(id) DO UPDATE SET data=excluded.data, revision=workspaces.revision+1 WHERE workspaces.revision=?').bind(id,JSON.stringify(next),revision).run();if(!out.meta.changes)return response({error:'동시에 변경되었습니다. 새로고침해 주세요.'},409);return response({ok:true,revision:revision+1})}catch(e){console.error('Workspace write failed');return response({error:'저장하지 못했습니다.'},503)}}
+export const maxDuration=60;
+const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 
+export async function GET(){
+  if(!supabaseConfigured())return json({...defaultWorkspace,bookings:[],revision:0,setupRequired:true,user:null,notifications:{mode:'off'}});
+  const user=await currentUser();
+  if(!user)return json({...defaultWorkspace,bookings:[],revision:0,setupRequired:false,user:null,notifications:{mode:'off'}});
+  try{
+    const db=adminClient();
+    const [{data:row,error},{data:bookings,error:bookingError}]=await Promise.all([
+      db.from('moa_workspaces').select('data,revision').eq('owner_id',user.id).maybeSingle(),
+      db.from('moa_bookings').select('payload').eq('owner_id',user.id).eq('status','confirmed').order('starts_at')
+    ]);
+    if(error||bookingError)throw Error();
+    return json({...defaultWorkspace,...(row?.data||{}),bookings:(bookings||[]).map(b=>b.payload),revision:row?.revision||0,setupRequired:false,user:{name:user.user_metadata.full_name||user.email,email:user.email},notifications:integrationStatus()});
+  }catch{return json({error:'Supabase 테이블을 불러오지 못했습니다. SQL 마이그레이션과 환경변수를 확인해 주세요.'},503)}
+}
+
+export async function POST(request:Request){
+  if(request.headers.get('origin')!==new URL(request.url).origin)return json({error:'허용되지 않은 요청입니다.'},403);
+  if(!supabaseConfigured())return json({error:'Supabase 연결 설정이 필요합니다.'},503);
+  const user=await currentUser();
+  if(!user)return json({error:'Google 로그인 후 저장할 수 있습니다.'},401);
+  let raw:unknown;
+  try{const body=await request.text();if(body.length>250000)return json({error:'요청이 너무 큽니다.'},413);raw=JSON.parse(body)}catch{return json({error:'잘못된 요청입니다.'},400)}
+  const parsed=workspacePatch.safeParse(raw);
+  if(!parsed.success)return json({error:parsed.error.issues[0]?.message||'입력을 확인해 주세요.'},400);
+  try{
+    const {revision,...changes}=parsed.data,db=adminClient();
+    const [{data:row,error},{data:oldBookings,error:bookingsError}]=await Promise.all([
+      db.from('moa_workspaces').select('data,revision').eq('owner_id',user.id).maybeSingle(),
+      db.from('moa_bookings').select('payload').eq('owner_id',user.id).eq('status','confirmed')
+    ]);
+    if(error||bookingsError)throw Error('storage');
+    if((row?.revision||0)!==revision)return json({error:'다른 변경사항이 있습니다. 새로고침 후 다시 시도해 주세요.'},409);
+    const old=(oldBookings||[]).map(r=>r.payload),bookings=changes.bookings||old;
+    const state={...defaultWorkspace,...(row?.data||{}),...changes};delete state.bookings;
+    if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
+    for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
+      validateNewBooking(b,state);
+      const start=new Date(b.day+'T'+b.time+':00+09:00').toISOString(),end=new Date(Date.parse(start)+b.duration*60000).toISOString();
+      if(overlaps(start,end,await ownerBusy(user.id,start,end)))return json({error:'Google 캘린더에 다른 일정이 있습니다.'},409);
+    }catch(e){return json({error:e instanceof Error?e.message:'예약할 수 없습니다.'},400)}}
+    const {data:nextRevision,error:saveError}=await db.rpc('moa_save_workspace',{p_owner:user.id,p_revision:revision,p_state:state,p_bookings:bookings,p_mode:notificationMode()});
+    if(saveError){const messages:Record<string,string>={stale_revision:'다른 변경사항이 있습니다. 새로고침해 주세요.',overlapping_booking:'이미 예약된 시간입니다.',immutable_booking:'기존 예약은 직접 수정할 수 없습니다. 취소 후 다시 예약해 주세요.',invalid_time:'예약할 수 없는 시간입니다.',invalid_event:'예약 페이지가 변경되었습니다.',duplicate_booking:'중복된 예약입니다.'};const key=Object.keys(messages).find(k=>saveError.message.includes(k));return json({error:key?messages[key]:'예약을 저장하지 못했습니다. Supabase 설정을 확인해 주세요.'},key?409:503)}
+    after(async()=>{try{await processNotifications(user.id)}catch{console.error('notification_queue_processing_failed')}});
+    return json({ok:true,revision:nextRevision,notificationMode:notificationMode()});
+  }catch{return json({error:'Supabase 저장소에 연결하지 못했습니다.'},503)}
+}
