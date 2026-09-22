@@ -133,7 +133,7 @@ https://www.googleapis.com/auth/calendar.calendarlist.readonly
 4. Deploy 후 최종 URL을 `APP_URL`과 Supabase URL Configuration에 맞추고 재배포합니다. 도메인 변경 시도 동일합니다.
 5. Google 로그인 → 예약 페이지 생성 → 링크 복사 → 다른 Google 계정으로 공개 링크 예약 → 양쪽 이메일 수신 순서로 검증합니다.
 
-예약 직후 `after()`로 즉시 발송을 처리합니다. `vercel.json`의 1분 Cron은 남은 대기/재시도를 처리하며, Authorization 헤더의 `CRON_SECRET`으로 보호합니다. **1분 Cron 지원 플랜이 필요합니다.** Hobby는 하루 한 번 제한이 있어 현재 Cron 설정을 그대로 배포할 수 없습니다. Hobby로 화면만 시험하려면 `crons`를 제거하고 알림을 `off`로 둡니다. [Cron 운영](https://vercel.com/docs/cron-jobs/manage-cron-jobs), [플랜별 주기](https://vercel.com/docs/cron-jobs/usage-and-pricing)
+예약 직후 `after()`로 즉시 발송을 처리합니다. 현재 Hobby 초기 배포를 위해 `vercel.json`에는 Cron을 등록하지 않았으며 알림 모드는 `off`로 유지합니다. 실제 알림 운영 전에 남은 대기/재시도를 처리하는 스케줄러를 연결해야 합니다. 1분 Cron 지원 플랜에서는 `"crons": [{"path":"/api/cron/notifications","schedule":"* * * * *"}]`를 추가할 수 있습니다. 엔드포인트는 Authorization 헤더의 `CRON_SECRET`으로 보호합니다. Hobby는 하루 한 번 제한이 있습니다. [Cron 운영](https://vercel.com/docs/cron-jobs/manage-cron-jobs), [플랜별 주기](https://vercel.com/docs/cron-jobs/usage-and-pricing)
 
 GitHub push가 자동 배포되려면 Vercel Import 연결을 먼저 완료해야 합니다.
 
