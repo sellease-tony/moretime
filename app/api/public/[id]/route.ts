@@ -1,3 +1,4 @@
+import {syncBooking} from '@/lib/calendar/sync';
 import {after} from 'next/server';
 import {currentUser,adminClient,supabaseConfigured} from '@/lib/supabase/server';
 import {loadOwner,slotsFor,validDay} from '@/lib/bookings/server';
@@ -30,7 +31,7 @@ export async function POST(request:Request,context:Context){
     const {data:existing,error:existingError}=await adminClient().from('moa_bookings').select('payload,status').eq('id',body.id).eq('owner_id',target.owner_id).maybeSingle();
     if(existingError)throw Error('기존 예약 요청을 확인하지 못했습니다.');
     if(existing){
-      if(existing.status==='confirmed'&&existing.payload.email===user.email&&existing.payload.day===body.day&&existing.payload.time===body.time)return json({ok:true,id:body.id,mode:notificationMode()});
+      if(existing.status==='confirmed'&&existing.payload.email===user.email&&existing.payload.day===body.day&&existing.payload.time===body.time)return json({ok:true,id:body.id,mode:notificationMode(),calendar:await syncBooking(target.owner_id,body.id)});
       return json({error:'이미 처리된 예약 요청입니다.'},409);
     }
     if(!validDay(body.day||''))return json({error:'예약 날짜를 확인해 주세요.'},400);
@@ -47,6 +48,6 @@ export async function POST(request:Request,context:Context){
     const {error}=await db.rpc('moa_save_workspace',{p_owner:target.owner_id,p_revision:data.revision,p_state:data.state,p_bookings:[...data.bookings,booking],p_mode:notificationMode()});
     if(error)return json({error:'예약 가능한 시간이 변경되었습니다. 새로고침 후 다시 선택해 주세요.'},409);
     after(async()=>{try{await processNotifications(target.owner_id)}catch{console.error('notification_queue_processing_failed')}});
-    return json({ok:true,id:booking.id,mode:notificationMode()});
+    return json({ok:true,id:booking.id,mode:notificationMode(),calendar:await syncBooking(target.owner_id,booking.id)});
   }catch(e){return json({error:e instanceof Error?e.message:'예약하지 못했습니다.'},503)}
 }

@@ -51,13 +51,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```text
 https://www.googleapis.com/auth/calendar.events.freebusy
 https://www.googleapis.com/auth/calendar.calendarlist.readonly
+https://www.googleapis.com/auth/calendar.events.owned
 ```
 
 기본 캘린더 및 표시하도록 선택한 캘린더의 바쁜 시간을 제외합니다. 숨긴 캘린더는 제외합니다. 반복/종일 일정은 Google FreeBusy 결과를 따르며, ‘한가함’으로 설정한 이벤트는 예약을 막지 않습니다. 일정 제목·내용은 가져와 예약자에게 공개하지 않습니다.
 
 조회 실패나 권한 취소 시 예약을 중지합니다. Google 테스트 앱의 사용자 제한·토큰 만료 및 공개 서비스의 권한 검증 필요 여부를 확인하세요. [Supabase Google 설정](https://supabase.com/docs/guides/auth/social-login/auth-google), [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [FreeBusy API](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query)
 
-현재는 Calendar **읽기** 연동이며 예약 이벤트 자동 생성은 미구현입니다. Google 직접 변경과 DB 저장은 한 트랜잭션으로 묶을 수 없어 마지막 조회 직후 외부 일정이 추가되는 경쟁 구간은 남습니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
+예약 가능 시간은 예약 페이지 주최자의 캘린더로 계산합니다. 예약자는 기본 Google 신원 확인만 하며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 설정의 예약·취소 캘린더 반영 재시도로 복구합니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. 자동 재시도 스케줄러는 없으며 기존 예약도 재시도 버튼으로 반영합니다. Google 직접 변경과 DB 저장은 한 트랜잭션으로 묶을 수 없어 마지막 조회 직후 외부 일정이 추가되는 경쟁 구간은 남습니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
 
 ## 3. 이메일: Resend
 

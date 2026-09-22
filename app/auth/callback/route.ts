@@ -7,7 +7,7 @@ export async function GET(request:Request){
   if(code&&supabaseConfigured()){
     const sb=await sessionClient();const {data,error}=await sb.auth.exchangeCodeForSession(code);
     if(!error&&data.user){
-      if(data.session?.provider_refresh_token){try{await saveCalendarConnection(data.user.id,data.session.provider_refresh_token)}catch{return NextResponse.redirect(new URL('/login?auth_error=calendar',origin))}}
+      if(!/^\/book\/[a-f0-9-]{36}$/.test(new URL(request.url).searchParams.get('next')||'')&&data.session?.provider_refresh_token){try{await saveCalendarConnection(data.user.id,data.session.provider_refresh_token)}catch{return NextResponse.redirect(new URL('/login?auth_error=calendar',origin))}}
       const next=new URL(request.url).searchParams.get('next');
       return NextResponse.redirect(new URL(next&&/^\/book\/[a-f0-9-]{36}$/.test(next)?next:'/app',origin));
     }
