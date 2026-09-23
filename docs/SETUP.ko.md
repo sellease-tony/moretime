@@ -15,6 +15,7 @@ GitHub: https://github.com/sellease-tony/moretime
 1. 프로젝트를 생성하고 SQL Editor에서 아래 파일을 순서대로 **한 번씩** 실행합니다.
    - `supabase/migrations/202609200001_moatime.sql`
    - `supabase/migrations/202609200002_calendar_links.sql`
+   - `supabase/migrations/202609230001_saved_availability.sql`
 2. Project URL, Publishable key, Secret key를 확인합니다.
 3. URL/Publishable key만 `NEXT_PUBLIC_*` 변수에 사용합니다. Secret key 또는 기존 `service_role` key는 `SUPABASE_SECRET_KEY`에만 넣습니다.
 
@@ -56,9 +57,9 @@ https://www.googleapis.com/auth/calendar.events.owned
 
 기본 캘린더 및 표시하도록 선택한 캘린더의 바쁜 시간을 제외합니다. 숨긴 캘린더는 제외합니다. 반복/종일 일정은 Google FreeBusy 결과를 따르며, ‘한가함’으로 설정한 이벤트는 예약을 막지 않습니다. 일정 제목·내용은 가져와 예약자에게 공개하지 않습니다.
 
-조회 실패나 권한 취소 시 예약을 중지합니다. Google 테스트 앱의 사용자 제한·토큰 만료 및 공개 서비스의 권한 검증 필요 여부를 확인하세요. [Supabase Google 설정](https://supabase.com/docs/guides/auth/social-login/auth-google), [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [FreeBusy API](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query)
+Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니다. 게스트 조회·확정은 Google 조회 없이 저장된 가능 시간과 DB 예약 충돌로 검증합니다. Google 테스트 앱의 사용자 제한·토큰 만료 및 공개 서비스의 권한 검증 필요 여부를 확인하세요. [Supabase Google 설정](https://supabase.com/docs/guides/auth/social-login/auth-google), [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [FreeBusy API](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query)
 
-예약 가능 시간은 예약 페이지 주최자의 캘린더로 계산합니다. 예약자는 기본 Google 신원 확인만 하며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 설정의 예약·취소 캘린더 반영 재시도로 복구합니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. 자동 재시도 스케줄러는 없으며 기존 예약도 재시도 버튼으로 반영합니다. Google 직접 변경과 DB 저장은 한 트랜잭션으로 묶을 수 없어 마지막 조회 직후 외부 일정이 추가되는 경쟁 구간은 남습니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
+예약 가능 시간은 주최자가 페이지별로 선택하거나 Google에서 가져온 뒤 moa_workspaces.data.events[].availability에 저장합니다. 예약자는 기본 Google 신원 확인만 하며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 설정의 예약·취소 캘린더 반영 재시도로 복구합니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. 자동 재시도 스케줄러는 없으며 기존 예약도 재시도 버튼으로 반영합니다. Google에서 직접 변경한 일정은 주최자가 기간을 다시 가져와 저장해야 반영됩니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
 
 ## 3. 이메일: Resend
 
@@ -156,3 +157,7 @@ GitHub push가 자동 배포되려면 Vercel Import 연결을 먼저 완료해�
 실제 Supabase/Google/Resend/SOLAPI 성공은 키와 계정 설정 후 확인해야 합니다. 이번 작업에서 외부 메시지나 요금제 결제를 실행하지 않았습니다.
 
 후속 범위: 기업 조직 권한·팀원 초대·다중 주최자 공동 가능 시간, Google Calendar 이벤트 생성, 셀프 취소/변경, 미팅 전 리마인더, 최종 수신 Webhook, 운영 개인정보 보존·삭제 정책.
+
+## 페이지별 가능 시간
+예약 페이지 만들기 또는 카드의 날짜·가능 시간 설정에서 날짜별 시작 시간을 선택합니다. 주간 가능 시간은 기간 채우기에 쓰는 템플릿이며, 직접 고른 날짜는 요일 제한과 무관하게 저장할 수 있습니다. Google 빈 시간 자동 선택은 선택한 기간만 교체하며 저장 버튼을 눌러야 공개됩니다. 기존 페이지는 날짜를 처음 설정하기 전까지 예약을 받지 않습니다.
+공개 달력은 월별 DB 조회와 20초 갱신을 사용하고, 예약 확정 시 워크스페이스 행 잠금·revision·선택 시간 검증·주최자 전체 예약 겹침 검증을 같은 트랜잭션으로 수행합니다. 취소하면 원래 선택되어 있던 시간이 다시 열립니다. Google 일정 기록과 알림은 예약 커밋 후 처리됩니다.

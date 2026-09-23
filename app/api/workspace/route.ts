@@ -4,8 +4,6 @@ import {currentUser,adminClient,supabaseConfigured} from '@/lib/supabase/server'
 import {defaultWorkspace,workspacePatch,validateNewBooking} from '@/lib/workspace';
 import {integrationStatus,notificationMode} from '@/lib/notifications/providers';
 import {processNotifications} from '@/lib/notifications/worker';
-import {ownerBusy} from '@/lib/calendar/server';
-import {overlaps} from '@/lib/calendar/google';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -48,8 +46,7 @@ export async function POST(request:Request){
     if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
     for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
       validateNewBooking(b,state);
-      const start=new Date(b.day+'T'+b.time+':00+09:00').toISOString(),end=new Date(Date.parse(start)+b.duration*60000).toISOString();
-      if(overlaps(start,end,await ownerBusy(user.id,start,end)))return json({error:'Google 캘린더에 다른 일정이 있습니다.'},409);
+
     }catch(e){return json({error:e instanceof Error?e.message:'예약할 수 없습니다.'},400)}}
     const {data:nextRevision,error:saveError}=await db.rpc('moa_save_workspace',{p_owner:user.id,p_revision:revision,p_state:state,p_bookings:bookings,p_mode:notificationMode()});
     if(saveError){const messages:Record<string,string>={stale_revision:'다른 변경사항이 있습니다. 새로고침해 주세요.',overlapping_booking:'이미 예약된 시간입니다.',immutable_booking:'기존 예약은 직접 수정할 수 없습니다. 취소 후 다시 예약해 주세요.',invalid_time:'예약할 수 없는 시간입니다.',invalid_event:'예약 페이지가 변경되었습니다.',duplicate_booking:'중복된 예약입니다.'};const key=Object.keys(messages).find(k=>saveError.message.includes(k));return json({error:key?messages[key]:'예약을 저장하지 못했습니다. Supabase 설정을 확인해 주세요.'},key?409:503)}
