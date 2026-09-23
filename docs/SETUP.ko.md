@@ -59,7 +59,7 @@ https://www.googleapis.com/auth/calendar.events.owned
 
 Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니다. 게스트 조회·확정은 Google 조회 없이 저장된 가능 시간과 DB 예약 충돌로 검증합니다. Google 테스트 앱의 사용자 제한·토큰 만료 및 공개 서비스의 권한 검증 필요 여부를 확인하세요. [Supabase Google 설정](https://supabase.com/docs/guides/auth/social-login/auth-google), [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [FreeBusy API](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query)
 
-예약 가능 시간은 주최자가 페이지별로 선택하거나 Google에서 가져온 뒤 moa_workspaces.data.events[].availability에 저장합니다. 예약자는 기본 Google 신원 확인만 하며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 설정의 예약·취소 캘린더 반영 재시도로 복구합니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. 자동 재시도 스케줄러는 없으며 기존 예약도 재시도 버튼으로 반영합니다. Google에서 직접 변경한 일정은 주최자가 기간을 다시 가져와 저장해야 반영됩니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
+예약 가능 시간은 주최자가 페이지별로 선택하거나 Google에서 가져온 뒤 moa_workspaces.data.events[].availability에 저장합니다. 예약자는 로그인 없이 이름·이메일·휴대전화와 수신 동의를 입력해 예약할 수 있습니다. Google 로그인은 입력 편의를 위한 선택 사항이며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 설정의 예약·취소 캘린더 반영 재시도로 복구합니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. 자동 재시도 스케줄러는 없으며 기존 예약도 재시도 버튼으로 반영합니다. Google에서 직접 변경한 일정은 주최자가 기간을 다시 가져와 저장해야 반영됩니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
 
 ## 3. 이메일: Resend
 
@@ -67,7 +67,7 @@ Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니�
 2. API key를 생성합니다.
 3. `RESEND_API_KEY`, `EMAIL_FROM`을 설정합니다. 발신 주소 예: `모아타임 <booking@your-domain.com>`.
 
-예약 확정·취소 시 **예약자와 주최자 각각**에게 요청합니다. 두 이메일이 같으면 한 통만 보냅니다. 주최자 주소는 Supabase 사용자 정보에서, 외부 예약자 주소는 Google 로그인으로 확인된 이메일에서 가져옵니다.
+예약 확정·취소 시 **예약자와 주최자 각각**에게 요청합니다. 두 이메일이 같으면 한 통만 보냅니다. 주최자 주소는 Supabase 사용자 정보에서, 외부 예약자 주소는 예약 폼에 입력한 알림받을 이메일에서 가져옵니다. 비회원 이메일은 소유권을 인증한 주소가 아니며, 형식 검증과 수신 주소별 일일 예약 제한을 적용합니다.
 
 동일 작업은 동일 Idempotency-Key를 사용합니다. 공급자의 24시간 중복 방지 기간 안에서 처리하도록 작업 유효 기간을 23시간으로 제한하고, 일시적 이메일 오류는 최대 3회 시도합니다. [도메인 인증](https://resend.com/docs/dashboard/domains/introduction), [Idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys)
 
@@ -133,7 +133,7 @@ Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니�
 | `CRON_SECRET` | 32자 이상 무작위 비밀값 |
 
 4. Deploy 후 최종 URL을 `APP_URL`과 Supabase URL Configuration에 맞추고 재배포합니다. 도메인 변경 시도 동일합니다.
-5. Google 로그인 → 예약 페이지 생성 → 링크 복사 → 다른 Google 계정으로 공개 링크 예약 → 양쪽 이메일 수신 순서로 검증합니다.
+5. Google 로그인 → 예약 페이지 생성 → 링크 복사 → 로그인하지 않은 브라우저에서 이름·이메일·연락처를 입력해 공개 링크 예약 → 양쪽 이메일 수신 순서로 검증합니다.
 
 예약 직후 `after()`로 즉시 발송을 처리합니다. 현재 Hobby 초기 배포를 위해 `vercel.json`에는 Cron을 등록하지 않았으며 알림 모드는 `off`로 유지합니다. 실제 알림 운영 전에 남은 대기/재시도를 처리하는 스케줄러를 연결해야 합니다. 1분 Cron 지원 플랜에서는 `"crons": [{"path":"/api/cron/notifications","schedule":"* * * * *"}]`를 추가할 수 있습니다. 엔드포인트는 Authorization 헤더의 `CRON_SECRET`으로 보호합니다. Hobby는 하루 한 번 제한이 있습니다. [Cron 운영](https://vercel.com/docs/cron-jobs/manage-cron-jobs), [플랜별 주기](https://vercel.com/docs/cron-jobs/usage-and-pricing)
 
