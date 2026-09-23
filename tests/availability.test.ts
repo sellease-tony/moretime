@@ -4,9 +4,15 @@ import {PGlite} from '@electric-sql/pglite';
 import {readFile} from 'node:fs/promises';
 import {savedSlots,monthSlots,addDays,kstDay} from '../lib/availability';
 import {eventSchema,validateNewBooking} from '../lib/workspace';
+import {queryGoogleBusy} from '../lib/calendar/google';
 const day=addDays(kstDay(),5),availability={days:{[day]:['10:00','10:30','11:00']},source:'manual' as const,updatedAt:new Date().toISOString()};
 const event={id:'one',title:'상담',desc:'',duration:30 as const,color:'blue' as const,team:false,active:true,availability};
 const booking={id:'a0000000-0000-4000-8000-000000000001',eventId:'one',title:'상담',duration:30 as const,day,time:'10:00',name:'Test',email:'test@example.com',phone:'',channels:[] as [],notificationConsent:false};
+test('holiday subscription feeds are excluded without ignoring personal calendar errors',async()=>{
+  let calls=0;
+  const request=async(_url:URL|RequestInfo,init?:RequestInit)=>{calls++;if(calls===1)return Response.json({items:[{id:'primary',primary:true},{id:'ko.holiday@group.v.calendar.google.com',selected:true}]});assert.deepEqual(JSON.parse(String(init?.body)).items,[{id:'primary'}]);return Response.json({calendars:{primary:{busy:[]}}})};
+  assert.deepEqual(await queryGoogleBusy('host',day+'T00:00:00Z',day+'T23:00:00Z',request as typeof fetch),[]);
+});
 test('saved availability excludes cross-page overlaps, preserves boundaries and releases cancelled slots',()=>{
   const busy=[{start:day+'T10:15:00+09:00',end:day+'T11:00:00+09:00'}];
   assert.deepEqual(savedSlots(availability,day,30,busy),['11:00']);

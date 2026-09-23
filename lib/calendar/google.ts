@@ -9,7 +9,7 @@ export async function queryGoogleBusy(accessToken:string,start:string,end:string
     if(!r.ok)throw new CalendarError('Google 캘린더 연결을 확인해 주세요.');
     const d=await r.json() as {items?:{id:string;primary?:boolean;selected?:boolean;deleted?:boolean;hidden?:boolean}[];nextPageToken?:string};
     if(!Array.isArray(d.items))throw new CalendarError('캘린더 목록을 확인하지 못했습니다.');
-    ids.push(...d.items.filter(c=>!c.deleted&&!c.hidden&&(c.primary||c.selected)).map(c=>c.id));page=d.nextPageToken;
+    ids.push(...d.items.filter(c=>!c.deleted&&!c.hidden&&!c.id.endsWith('@group.v.calendar.google.com')&&(c.primary||c.selected)).map(c=>c.id));page=d.nextPageToken;
     if(ids.length>250)throw new CalendarError('조회할 캘린더가 너무 많습니다. Google Calendar에서 표시할 캘린더를 줄여주세요.');
   }while(page);
   ids=[...new Set(ids)];if(!ids.length)throw new CalendarError('조회 가능한 캘린더가 없습니다.');
