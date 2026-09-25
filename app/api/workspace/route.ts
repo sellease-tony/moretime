@@ -20,7 +20,7 @@ export async function GET(){
       db.from('moa_bookings').select('payload').eq('owner_id',user.id).eq('status','confirmed').order('starts_at')
     ]);
     if(error||bookingError)throw Error();
-    return json({...defaultWorkspace,...(row?.data||{}),bookings:(bookings||[]).map(b=>b.payload),revision:row?.revision||0,setupRequired:false,user:{name:user.user_metadata.full_name||user.email,email:user.email},notifications:integrationStatus()});
+    return json({...defaultWorkspace,...(row?.data||{}),bookings:(bookings||[]).map(b=>b.payload),revision:row?.revision||0,setupRequired:false,user:{name:user.user_metadata.full_name||user.email,email:user.email},serverNow:Date.now(),notifications:integrationStatus()});
   }catch{return json({error:'Supabase 테이블을 불러오지 못했습니다. SQL 마이그레이션과 환경변수를 확인해 주세요.'},503)}
 }
 

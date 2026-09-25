@@ -11,8 +11,16 @@ export async function proxy(request:NextRequest){
       values.forEach(({name,value,options})=>response.cookies.set(name,value,options));
     }}
   });
-  await sb.auth.getClaims();
+  const {data,error}=await sb.auth.getClaims();
+  const signedIn=!error&&!!data?.claims?.sub&&data.claims.app_metadata?.provider==='google';
+  const path=request.nextUrl.pathname;
+  const target=path==='/'&&signedIn?'/app':(path==='/app'||path.startsWith('/app/'))&&!signedIn?'/':null;
+  if(target){
+    const redirect=NextResponse.redirect(new URL(target,request.url));
+    response.cookies.getAll().forEach(cookie=>redirect.cookies.set(cookie));
+    response=redirect;
+  }
   response.headers.set('Cache-Control','private, no-store');
   return response;
 }
-export const config={matcher:['/app/:path*','/login','/auth/:path*','/book/:path*','/api/workspace','/api/integrations','/api/availability','/api/public-links','/api/public/:path*']};
+export const config={matcher:['/','/app/:path*','/login','/auth/:path*','/book/:path*','/api/workspace','/api/integrations','/api/availability/:path*','/api/calendar/:path*','/api/public-links','/api/public/:path*']};
