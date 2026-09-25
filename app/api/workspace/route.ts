@@ -1,3 +1,5 @@
+import {syncOwnerAvailability,currentCalendarBusy} from '@/lib/calendar/availability-sync';
+import {applyCalendarBusy} from '@/lib/calendar/availability-state';
 import {syncBooking} from '@/lib/calendar/sync';
 import {after} from 'next/server';
 import {currentUser,adminClient,supabaseConfigured} from '@/lib/supabase/server';
@@ -14,6 +16,7 @@ export async function GET(){
   const user=await currentUser();
   if(!user)return json({...defaultWorkspace,bookings:[],revision:0,setupRequired:false,user:null,notifications:{mode:'off'}});
   try{
+    await syncOwnerAvailability(user.id);
     const db=adminClient();
     const [{data:row,error},{data:bookings,error:bookingError}]=await Promise.all([
       db.from('moa_workspaces').select('data,revision').eq('owner_id',user.id).maybeSingle(),
@@ -42,7 +45,8 @@ export async function POST(request:Request){
     if(error||bookingsError)throw Error('storage');
     if((row?.revision||0)!==revision)return json({error:'다른 변경사항이 있습니다. 새로고침 후 다시 시도해 주세요.'},409);
     const old=(oldBookings||[]).map(r=>r.payload),bookings=changes.bookings||old;
-    const state={...defaultWorkspace,...(row?.data||{}),...changes};delete state.bookings;
+    let state={...defaultWorkspace,...(row?.data||{}),...changes};delete state.bookings;
+    if(changes.events){try{state=applyCalendarBusy(state,await currentCalendarBusy(user.id))}catch{return json({error:'Google 캘린더를 확인하지 못했습니다. 다시 연결한 후 저장해 주세요.'},503)}}
     if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
     for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
       validateNewBooking(b,state);
@@ -53,6 +57,6 @@ export async function POST(request:Request){
     after(async()=>{try{await processNotifications(user.id)}catch{console.error('notification_queue_processing_failed')}});
     const changed=[...bookings.filter(b=>!old.some(o=>o.id===b.id)),...old.filter(o=>!bookings.some(b=>b.id===o.id))];
     const calendar=await Promise.all(changed.map(b=>syncBooking(user.id,b.id)));
-    return json({ok:true,revision:nextRevision,notificationMode:notificationMode(),calendarPending:calendar.some(r=>!r.synced)});
+    return json({ok:true,revision:nextRevision,events:state.events,calendarSync:state.calendarSync,notificationMode:notificationMode(),calendarPending:calendar.some(r=>!r.synced)});
   }catch{return json({error:'Supabase 저장소에 연결하지 못했습니다.'},503)}
 }
