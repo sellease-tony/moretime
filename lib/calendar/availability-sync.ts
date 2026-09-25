@@ -25,7 +25,9 @@ export async function syncOwnerAvailability(owner:string,force=false){
   const state=applyCalendarBusy(row.data as CalendarState,busy,new Date(),ok);
   const {data:updated,error:writeError}=await db.from('moa_workspaces').update({data:state,revision:row.revision+1,updated_at:new Date().toISOString()}).eq('owner_id',owner).eq('revision',row.revision).select('revision');
   if(writeError)throw Error('가능 시간을 갱신하지 못했습니다.');
-  if(updated?.length)return;
+  if(updated?.length)return ok;
+  // Refresh Google data after a concurrent commit; never retry an old snapshot.
+  try{busy=await currentCalendarBusy(owner);ok=true}catch{busy=[];ok=false}
  }
  throw Error('다른 변경사항이 있습니다. 잠시 후 새로고침해 주세요.');
 }

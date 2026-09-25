@@ -1,6 +1,6 @@
 export type Busy={start:string;end:string};
 export class CalendarError extends Error{}
-export async function queryGoogleBusy(accessToken:string,start:string,end:string,fetcher:typeof fetch=fetch):Promise<Busy[]>{
+export async function selectedCalendarIds(accessToken:string,fetcher:typeof fetch=fetch):Promise<string[]>{
   // Selected calendars, including the primary calendar; paginate instead of silently ignoring others.
   let ids:string[]=[],page:string|undefined;
   do{
@@ -13,6 +13,10 @@ export async function queryGoogleBusy(accessToken:string,start:string,end:string
     if(ids.length>250)throw new CalendarError('조회할 캘린더가 너무 많습니다. Google Calendar에서 표시할 캘린더를 줄여주세요.');
   }while(page);
   ids=[...new Set(ids)];if(!ids.length)throw new CalendarError('조회 가능한 캘린더가 없습니다.');
+  return ids;
+}
+export async function queryGoogleBusy(accessToken:string,start:string,end:string,fetcher:typeof fetch=fetch):Promise<Busy[]>{
+  const ids=await selectedCalendarIds(accessToken,fetcher);
   const busy:Busy[]=[];
   for(let i=0;i<ids.length;i+=50){
     const group=ids.slice(i,i+50);
