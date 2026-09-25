@@ -1,3 +1,4 @@
+import {syncBooking} from './sync';
 import 'server-only';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {adminClient} from '@/lib/supabase/server';
@@ -52,6 +53,11 @@ export async function processCalendarJob(){
  const job=data?.[0];if(!job)return {processed:0};
  let ok=false;
  try{
+  const {data:pending,error:pendingError}=await db.from('moa_bookings').select('id').eq('owner_id',job.owner_id).eq('calendar_pending',true).order('status').limit(2);
+  if(pendingError)throw Error('Calendar ledger unavailable');
+  for(const b of pending||[])if(!(await syncBooking(job.owner_id,b.id)).synced)throw Error('Booking calendar retry required');
+  const {count,error:countError}=await db.from('moa_bookings').select('id',{head:true,count:'exact'}).eq('owner_id',job.owner_id).eq('calendar_pending',true);
+  if(countError||count)throw Error('More calendar writes pending');
   const result=await syncOwnerAvailability(job.owner_id,true);
   if(result===false)throw Error('Busy lookup failed');
   await renewCalendarChannels(job.owner_id);

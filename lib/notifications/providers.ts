@@ -1,7 +1,8 @@
+import {managementUrl} from '@/lib/bookings/manage-token';
 import {SolapiMessageService} from 'solapi';
 import type {Booking} from '@/lib/workspace';
 export type Channel='email'|'sms'|'kakao';
-export type NoticeJob={id:string;owner_id:string;booking_id:string;channel:Channel;recipient_role?:'host'|'guest';event_type:'confirmed'|'cancelled';destination:string;payload:Booking;mode:'off'|'dry-run'|'live';attempts:number;lease_token:string;created_at:string;expires_at:string};
+export type NoticeJob={id:string;owner_id:string;booking_id:string;channel:Channel;recipient_role?:'host'|'guest';event_type:'confirmed'|'cancelled';destination:string;payload:Booking & {previousDay?:string;previousTime?:string};mode:'off'|'dry-run'|'live';attempts:number;lease_token:string;created_at:string;expires_at:string};
 export type Delivery={status:'accepted'|'simulated'|'disabled'|'blocked'|'failed'|'unknown'|'retry';providerId?:string;error?:string};
 type Environment=Record<string,string|undefined>;
 export function notificationMode(e:Environment=process.env):'off'|'dry-run'|'live'{return e.NOTIFICATION_MODE==='live'?'live':e.NOTIFICATION_MODE==='dry-run'?'dry-run':'off'}
@@ -13,9 +14,9 @@ export function integrationStatus(e:Environment=process.env){return {
   scheduler:!!e.CRON_SECRET,
 }}
 export function noticeText(j:NoticeJob){
-  const state=j.event_type==='confirmed'?'확정':'취소';
+  const state=j.event_type==='confirmed'?(j.payload.previousDay?'변경':'확정'):'취소';
   const intro=j.recipient_role==='host'?`${j.payload.name}님의 예약이 ${state}되었습니다.\n예약자 이메일: ${j.payload.email}`:`${j.payload.name}님, 예약이 ${state}되었습니다.`;
-  return `[모아타임] 예약 ${state}\n${intro}\n일정: ${j.payload.title}\n일시: ${j.payload.day} ${j.payload.time} (한국시간)\n소요 시간: ${j.payload.duration}분`;
+  return `[모아타임] 예약 ${state}\n${intro}\n일정: ${j.payload.title}\n일시: ${j.payload.day} ${j.payload.time} (한국시간)\n소요 시간: ${j.payload.duration}분${j.payload.previousDay?`\n변경 전: ${j.payload.previousDay} ${j.payload.previousTime} (한국시간)`:""}`;
 }
 export function solapiMessage(j:NoticeJob,e:Environment){
   if(j.channel==='sms')return {to:j.destination,from:e.SOLAPI_FROM!,text:noticeText(j),type:'LMS' as const,subject:j.event_type==='confirmed'?'예약 확정 안내':'예약 취소 안내'};
@@ -30,7 +31,7 @@ export async function deliver(j:NoticeJob,e:Environment=process.env,deps:Depende
   if(!config[j.channel])return {status:'blocked',error:'발송 서비스 설정이 필요합니다.'};
   if(j.channel==='email'){
     try{
-      const res=await (deps.fetcher||fetch)('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${e.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`moatime/${j.id}`},body:JSON.stringify({from:e.EMAIL_FROM,to:[j.destination],subject:`[모아타임] ${j.event_type==='confirmed'?'예약 확정':'예약 취소'} · ${j.payload.title}`,text:noticeText(j)}),signal:AbortSignal.timeout(12000)});
+      const res=await (deps.fetcher||fetch)('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${e.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`moatime/${j.id}`},body:JSON.stringify({from:e.EMAIL_FROM,to:[j.destination],subject:`[모아타임] ${j.event_type==='confirmed'?(j.payload.previousDay?'예약 변경':'예약 확정'):'예약 취소'} · ${j.payload.title}`,text:noticeText(j)+(j.recipient_role!=='host'&&j.event_type==='confirmed'&&e.APP_URL&&e.CALENDAR_TOKEN_ENCRYPTION_KEY?`\n\n예약 변경·취소: ${managementUrl(j.booking_id,e.APP_URL,e.CALENDAR_TOKEN_ENCRYPTION_KEY)}\n예약 시작 전까지 로그인 없이 변경·취소할 수 있습니다. 이 링크는 다른 사람에게 공유하지 마세요.`:'')}),signal:AbortSignal.timeout(12000)});
       if(!res.ok){const retry=[429,500,502,503,504].includes(res.status);return {status:retry?'retry':'failed',error:`이메일 서비스 응답 오류 (${res.status})`}};
       const body=await res.json() as {id?:string};
       return body.id?{status:'accepted',providerId:body.id}:{status:'retry',error:'이메일 접수 결과를 확인하지 못했습니다.'};

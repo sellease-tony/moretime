@@ -10,3 +10,5 @@ h1,h2,h3,.brand{color:var(--brand-ink)}
 .slots button.picked{color:#fff;background:var(--primary);border-color:var(--primary)}
 button:focus-visible,a:focus-visible{outline-color:var(--primary)}
 .switch input:focus-visible+span{outline-color:var(--primary)}
+
+.manage-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}.manage-actions .authbutton{width:auto;margin:0;padding:12px 20px}.manage-actions .primary{margin:0}

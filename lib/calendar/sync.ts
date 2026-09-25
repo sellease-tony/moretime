@@ -15,6 +15,8 @@ export async function syncBooking(owner:string,id:string,token?:string){
     const latest=await db.from('moa_bookings').select('status').eq('owner_id',owner).eq('id',id).single();
     if(latest.error)throw Error('예약 상태를 다시 확인해야 합니다.');
     if(data.status!=='cancelled'&&latest.data.status==='cancelled')await syncGoogleEvent(access,data.payload,true);
+    const {error:doneError}=await db.from('moa_bookings').update({calendar_pending:false}).eq('id',id).eq('owner_id',owner).eq('status',latest.data.status);
+    if(doneError)throw Error('캘린더 처리 결과 저장 실패');
     return {synced:true};
   }catch{return {synced:false};}
 }

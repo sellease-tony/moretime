@@ -1,3 +1,4 @@
+import {managementUrl} from '@/lib/bookings/manage-token';
 import {guestContactSchema} from '@/lib/bookings/guest';
 import {monthSlots,savedSlots,kstDay} from '@/lib/availability';
 import {syncBooking} from '@/lib/calendar/sync';
@@ -39,7 +40,7 @@ export async function POST(request:Request,context:Context){
     const {data:existing,error:existingError}=await adminClient().from('moa_bookings').select('payload,status').eq('id',body.id).eq('owner_id',target.owner_id).maybeSingle();
     if(existingError)throw Error('기존 예약 요청을 확인하지 못했습니다.');
     if(existing){
-      if(existing.status==='confirmed'&&existing.payload.email===email&&existing.payload.eventId===target.event_id&&existing.payload.name===name&&existing.payload.phone===phone&&existing.payload.day===body.day&&existing.payload.time===body.time){after(async()=>{await syncBooking(target.owner_id,body.id)});return json({ok:true,id:body.id,mode:notificationMode(),calendar:{pending:true}});}
+      if(existing.status==='confirmed'&&existing.payload.email===email&&existing.payload.eventId===target.event_id&&existing.payload.name===name&&existing.payload.phone===phone&&existing.payload.day===body.day&&existing.payload.time===body.time){after(async()=>{await syncBooking(target.owner_id,body.id)});return json({ok:true,id:body.id,manageUrl:managementUrl(body.id),mode:notificationMode(),calendar:{pending:true}});}
       return json({error:'이미 처리된 예약 요청입니다.'},409);
     }
     if(!validDay(body.day||''))return json({error:'예약 날짜를 확인해 주세요.'},400);
