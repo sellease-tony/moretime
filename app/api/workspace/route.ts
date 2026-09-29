@@ -1,4 +1,4 @@
-import {syncOwnerAvailability,currentCalendarBusy} from '@/lib/calendar/availability-sync';
+import {syncOwnerAvailability,currentCalendarConstraints} from '@/lib/calendar/availability-sync';
 import {applyCalendarBusy} from '@/lib/calendar/availability-state';
 import {syncBooking} from '@/lib/calendar/sync';
 import {after} from 'next/server';
@@ -46,7 +46,7 @@ export async function POST(request:Request){
     if((row?.revision||0)!==revision)return json({error:'다른 변경사항이 있습니다. 새로고침 후 다시 시도해 주세요.'},409);
     const old=(oldBookings||[]).map(r=>r.payload),bookings=changes.bookings||old;
     let state={...defaultWorkspace,...(row?.data||{}),...changes};delete state.bookings;
-    if(changes.events){try{state=applyCalendarBusy(state,await currentCalendarBusy(user.id))}catch{return json({error:'Google 캘린더를 확인하지 못했습니다. 다시 연결한 후 저장해 주세요.'},503)}}
+    if(changes.events){try{const constraints=await currentCalendarConstraints(user.id);state=applyCalendarBusy(state,constraints.busy,new Date(),true,constraints.holidays)}catch{return json({error:'Google 캘린더를 확인하지 못했습니다. 다시 연결한 후 저장해 주세요.'},503)}}
     if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
     for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
       validateNewBooking(b,state);
