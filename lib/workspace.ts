@@ -14,7 +14,7 @@ export const bookingSchema=z.object({id:z.string().uuid(),eventId:z.string().min
   if(b.channels.length&&!b.notificationConsent)ctx.addIssue({code:'custom',message:'예약 알림 수신 확인이 필요합니다.'});
   if(new Set(b.channels).size!==b.channels.length)ctx.addIssue({code:'custom',message:'중복된 알림 채널입니다.'});
 });
-export const workspacePatch=z.object({revision:z.number().int().nonnegative(),events:z.array(eventSchema).max(100).optional(),bookings:z.array(bookingSchema).max(500).optional(),hours:z.array(z.boolean()).length(7).optional(),range:z.tuple([clock,clock]).refine(r=>r[0]<r[1],'종료 시간이 시작 시간보다 늦어야 합니다.').optional()}).strict();
+export const workspacePatch=z.object({revision:z.number().int().nonnegative(),deleteEventId:z.string().min(1).max(80).optional(),events:z.array(eventSchema).max(100).optional(),bookings:z.array(bookingSchema).max(500).optional(),hours:z.array(z.boolean()).length(7).optional(),range:z.tuple([clock,clock]).refine(r=>r[0]<r[1],'종료 시간이 시작 시간보다 늦어야 합니다.').optional()}).strict().refine(v=>!v.deleteEventId||Object.keys(v).every(k=>['revision','deleteEventId'].includes(k)),'삭제 요청은 다른 변경과 함께 저장할 수 없습니다.');
 export type Booking=z.infer<typeof bookingSchema>;
 export function minutes(s:string){return Number(s.slice(0,2))*60+Number(s.slice(3))}
 export function validateNewBooking(b:Booking,state:typeof defaultWorkspace,now=new Date()){
