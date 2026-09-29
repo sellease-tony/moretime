@@ -12,3 +12,4 @@ button:focus-visible,a:focus-visible{outline-color:var(--primary)}
 .switch input:focus-visible+span{outline-color:var(--primary)}
 
 .manage-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}.manage-actions .authbutton{width:auto;margin:0;padding:12px 20px}.manage-actions .primary{margin:0}
+.reminder-settings{border:1px solid var(--line,#e2e8f0);border-radius:16px;padding:20px;margin:24px 0;display:flex;flex-wrap:wrap;gap:14px 24px}.reminder-settings legend{font-weight:700;padding:0 8px}.reminder-settings p{width:100%;margin:0}.reminder-settings label{display:flex;align-items:center;gap:8px}.reminder-settings input{width:18px;height:18px;accent-color:#00a884}
