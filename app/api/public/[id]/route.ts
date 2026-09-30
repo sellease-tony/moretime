@@ -1,3 +1,4 @@
+import {meetingFields} from '@/lib/bookings/meeting';
 import {managementUrl} from '@/lib/bookings/manage-token';
 import {guestContactSchema} from '@/lib/bookings/guest';
 import {monthSlots,savedSlots,kstDay} from '@/lib/availability';
@@ -23,7 +24,7 @@ export async function GET(request:Request,context:Context){
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return json({error:'월을 확인해 주세요.'},400);
     const days=monthSlots(event.availability,month,event.duration,owner.busy);
     const user=await currentUser();
-    return json({event:{title:event.title,desc:event.desc,duration:event.duration},slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
+    return json({event:{title:event.title,desc:event.desc,duration:event.duration,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
   }catch(e){return json({error:e instanceof Error?e.message:'예약 페이지를 불러오지 못했습니다.'},503)}
 }
 export async function POST(request:Request,context:Context){
@@ -40,14 +41,15 @@ export async function POST(request:Request,context:Context){
     const {data:existing,error:existingError}=await adminClient().from('moa_bookings').select('payload,status').eq('id',body.id).eq('owner_id',target.owner_id).maybeSingle();
     if(existingError)throw Error('기존 예약 요청을 확인하지 못했습니다.');
     if(existing){
-      if(existing.status==='confirmed'&&existing.payload.email===email&&existing.payload.eventId===target.event_id&&existing.payload.name===name&&existing.payload.phone===phone&&existing.payload.day===body.day&&existing.payload.time===body.time){after(async()=>{await syncBooking(target.owner_id,body.id)});return json({ok:true,id:body.id,mode:notificationMode(),calendar:{pending:true}});}
+      if(existing.status==='confirmed'&&existing.payload.email===email&&existing.payload.eventId===target.event_id&&existing.payload.name===name&&existing.payload.phone===phone&&existing.payload.day===body.day&&existing.payload.time===body.time){after(async()=>{await syncBooking(target.owner_id,body.id)});return json({ok:true,id:body.id,meetingTitle:existing.payload.meetingTitle||existing.payload.title,mode:notificationMode(),calendar:{pending:true}});}
       return json({error:'이미 처리된 예약 요청입니다.'},409);
     }
     if(!validDay(body.day||''))return json({error:'예약 날짜를 확인해 주세요.'},400);
     // Read saved host slots; the workspace revision and overlap check protect the transaction.
     const {slots,event,data}=await slotsFor(target.owner_id,target.event_id,body.day);
     if(!slots.includes(body.time))return json({error:'해당 시간에 다른 일정이 있습니다. 다른 시간을 선택해 주세요.'},409);
-    const parsed=bookingSchema.safeParse({id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:[...new Set(['email',...(Array.isArray(body.channels)?body.channels:[])])],notificationConsent:body.notificationConsent===true});
+    let fields;try{fields=meetingFields(event,body.company)}catch{return json({error:'회사명을 확인해 주세요. 필수인 경우 80자 이내로 입력해 주세요.'},400)}
+    const parsed=bookingSchema.safeParse({...fields,id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:[...new Set(['email',...(Array.isArray(body.channels)?body.channels:[])])],notificationConsent:body.notificationConsent===true});
     if(!parsed.success)return json({error:parsed.error.issues[0].message},400);
     const booking=parsed.data;
     const db=adminClient();
@@ -57,6 +59,6 @@ export async function POST(request:Request,context:Context){
     const {error}=await db.rpc('moa_save_workspace',{p_owner:target.owner_id,p_revision:data.revision,p_state:data.state,p_bookings:[...data.bookings,booking],p_mode:notificationMode()});
     if(error)return json({error:'예약 가능한 시간이 변경되었습니다. 새로고침 후 다시 선택해 주세요.'},409);
     after(async()=>{await Promise.allSettled([syncBooking(target.owner_id,booking.id),processNotifications(target.owner_id)])});
-    return json({ok:true,id:booking.id,manageUrl:managementUrl(booking.id),mode:notificationMode(),calendar:{pending:true}});
+    return json({ok:true,id:booking.id,manageUrl:managementUrl(booking.id),meetingTitle:booking.meetingTitle,mode:notificationMode(),calendar:{pending:true}});
   }catch(e){return json({error:e instanceof Error?e.message:'예약하지 못했습니다.'},503)}
 }

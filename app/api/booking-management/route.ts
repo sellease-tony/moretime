@@ -30,7 +30,7 @@ export async function GET(request:Request){
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return json({error:'월을 확인해 주세요.'},400);
   const canManage=booking.status==='confirmed'&&Date.parse(booking.starts_at)>Date.now();
   const owner=await loadOwner(booking.owner_id),event=owner.state.events.find(e=>e.id===booking.payload.eventId&&e.active);
-  return json({booking:{title:booking.payload.title,name:booking.payload.name,day:booking.payload.day,time:booking.payload.time,duration:booking.payload.duration,status:booking.status},canManage,canReschedule:canManage&&!!event?.availability,days:canManage&&event?monthSlots(event.availability,month,event.duration,owner.busy):{},token:managementToken(booking.id)});
+  return json({booking:{title:booking.payload.meetingTitle||booking.payload.title,name:booking.payload.name,day:booking.payload.day,time:booking.payload.time,duration:booking.payload.duration,status:booking.status},canManage,canReschedule:canManage&&!!event?.availability,days:canManage&&event?monthSlots(event.availability,month,event.duration,owner.busy):{},token:managementToken(booking.id)});
  }catch{return json({error:'예약 정보를 불러오지 못했습니다. 다시 시도해 주세요.'},503)}
 }
 export async function POST(request:Request){

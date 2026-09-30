@@ -15,12 +15,12 @@ test('reminder dispatch rechecks cancellation, start time, expiry and settings',
 });
 
 test('reminder email has correct subject and private guest management link with stable retry key',async()=>{
- const job={id:'job',booking_id:'10000000-0000-4000-8000-000000000001',channel:'email',recipient_role:'guest',event_type:'reminder_1h',mode:'live',destination:'guest@example.com',payload:{name:'Guest',title:'Meeting',day:'2030-01-01',time:'10:00',duration:30,previousDay:'2029-12-31'}} as NoticeJob;
+ const job={id:'job',booking_id:'10000000-0000-4000-8000-000000000001',channel:'email',recipient_role:'guest',event_type:'reminder_1h',mode:'live',destination:'guest@example.com',payload:{name:'Guest',title:'Meeting',meetingTitle:'ABC × 셀리즈 미팅',day:'2030-01-01',time:'10:00',duration:30,previousDay:'2029-12-31'}} as NoticeJob;
  const env={NOTIFICATION_MODE:'live',RESEND_API_KEY:'test',EMAIL_FROM:'test@example.com',APP_URL:'https://example.com',CALENDAR_TOKEN_ENCRYPTION_KEY:Buffer.alloc(32,7).toString('base64')};
  const sent:Array<{text:string;subject:string}>=[],keys:string[]=[];
  const fetcher=(async(_u:unknown,init?:RequestInit)=>{sent.push(JSON.parse(String(init?.body)));keys.push(new Headers(init?.headers).get('Idempotency-Key')!);return Response.json({id:'accepted'})}) as typeof fetch;
  await deliver(job,env,{fetcher});await deliver(job,env,{fetcher});await deliver({...job,recipient_role:'host',event_type:'reminder_24h'},env,{fetcher});
- assert.match(sent[0].subject,/1시간 전/);assert.match(sent[0].text,/#token=/);assert.doesNotMatch(sent[0].text,/변경 전/);assert.equal(keys[0],keys[1]);assert.match(sent[2].subject,/하루 전/);assert.doesNotMatch(sent[2].text,/#token=/);
+ assert.match(sent[0].subject,/ABC × 셀리즈 미팅/);assert.match(sent[0].text,/ABC × 셀리즈 미팅/);assert.match(sent[0].subject,/1시간 전/);assert.match(sent[0].text,/#token=/);assert.doesNotMatch(sent[0].text,/변경 전/);assert.equal(keys[0],keys[1]);assert.match(sent[2].subject,/하루 전/);assert.doesNotMatch(sent[2].text,/#token=/);
 });
 
 test('scheduler enqueues only due eligible reminders once, respects mode and recipient preferences',async()=>{
