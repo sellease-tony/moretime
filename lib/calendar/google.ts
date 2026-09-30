@@ -31,7 +31,7 @@ export function overlaps(start:string,end:string,busy:Busy[]){const s=Date.parse
 export function availableSlots(day:string,duration:number,hours:boolean[],range:string[],busy:Busy[],now=new Date()){
   if(!hours[new Date(day+'T12:00:00+09:00').getUTCDay()])return [];
   const minutes=(s:string)=>Number(s.slice(0,2))*60+Number(s.slice(3)),slots:string[]=[];
-  for(let m=minutes(range[0]);m+duration<=minutes(range[1]);m+=30){
+  for(let m=Math.ceil(minutes(range[0])/duration)*duration;m+duration<=minutes(range[1]);m+=duration){
     const time=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
     const start=new Date(day+'T'+time+':00+09:00'),end=new Date(start.getTime()+duration*60000);
     if(start>now&&!overlaps(start.toISOString(),end.toISOString(),busy))slots.push(time);
