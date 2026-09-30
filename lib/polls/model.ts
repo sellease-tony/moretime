@@ -1,0 +1,6 @@
+import {z} from 'zod';
+export const slotSchema=z.string().regex(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/).refine(s=>{const d=new Date(s+':00+09:00');return Number.isFinite(d.getTime())&&new Date(s.slice(0,10)+'T00:00:00Z').toISOString().slice(0,10)===s.slice(0,10)});
+export const pollSchema=z.object({title:z.string().trim().min(1).max(60),description:z.string().max(150).default(''),duration:z.union([z.literal(15),z.literal(30),z.literal(60)]),meeting_mode:z.enum(['online','offline']),expected_count:z.number().int().min(1).max(100),candidates:z.array(slotSchema).min(1).max(200)}).strict();
+export const voteSchema=z.object({id:z.string().uuid(),key:z.string().uuid(),name:z.string().trim().min(1).max(80),email:z.string().trim().toLowerCase().email().max(200),choices:z.array(slotSchema).max(200),consent:z.literal(true)}).strict();
+export function rankSlots(candidates:string[],responses:{choices:string[]}[]){return candidates.map(slot=>({slot,count:responses.filter(r=>r.choices.includes(slot)).length})).sort((a,b)=>b.count-a.count||a.slot.localeCompare(b.slot))}
+export type Poll={id:string;title:string;description:string;duration:number;meeting_mode:'online'|'offline';expected_count:number;candidates:string[];status:'open'|'confirmed'|'cancelled';selected_slot:string|null;revision:number;responses?:{id:string;name:string;email:string;choices:string[]}[]};

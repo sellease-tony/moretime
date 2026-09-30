@@ -13,7 +13,7 @@ async function authorized(request:Request){
  if(!id)return null;
  const {data,error}=await adminClient().from('moa_bookings').select('id,owner_id,payload,status,starts_at,ends_at,replaced_by').eq('id',id).maybeSingle();
  if(error)throw Error('storage');
- if(!data||Date.now()>Date.parse(data.ends_at)+30*86400000)return null;
+ if(!data||data.payload.pollId||Date.now()>Date.parse(data.ends_at)+30*86400000)return null;
  return data;
 }
 export async function GET(request:Request){

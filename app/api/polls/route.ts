@@ -1,0 +1,6 @@
+import {adminClient,currentUser} from '@/lib/supabase/server';
+import {pollSchema} from '@/lib/polls/model';
+import {json,sameOrigin,checkCandidates} from '@/lib/polls/server';
+export const maxDuration=60;
+export async function GET(){const user=await currentUser();if(!user)return json({error:'로그인이 필요합니다.'},401);const {data,error}=await adminClient().from('moa_polls').select('*').eq('owner_id',user.id).order('created_at',{ascending:false});return error?json({error:'투표를 불러오지 못했습니다.'},503):json({polls:data});}
+export async function POST(request:Request){if(!sameOrigin(request))return json({error:'허용되지 않은 요청입니다.'},403);const user=await currentUser();if(!user)return json({error:'로그인이 필요합니다.'},401);try{const text=await request.text();if(text.length>20000)return json({error:'후보가 너무 많습니다.'},400);const body=pollSchema.parse(JSON.parse(text));body.candidates=[...new Set(body.candidates)].sort();await checkCandidates(user.id,body.candidates,body.duration,body.meeting_mode);const {data,error}=await adminClient().from('moa_polls').insert({...body,owner_id:user.id}).select().single();if(error)throw Error('투표를 저장하지 못했습니다.');return json({poll:data});}catch(e){return json({error:e instanceof Error?e.message:'저장 실패'},400)}}
