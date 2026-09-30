@@ -18,12 +18,18 @@ export async function selectedCalendarIds(accessToken:string,fetcher:typeof fetc
 export async function queryGoogleBusy(accessToken:string,start:string,end:string,fetcher:typeof fetch=fetch):Promise<Busy[]>{
   const ids=await selectedCalendarIds(accessToken,fetcher);
   const busy:Busy[]=[];
+  const from=Date.parse(start),to=Date.parse(end);
+  if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from)throw new CalendarError('조회 기간을 확인해 주세요.');
+  // Google rejects long free/busy ranges; retain the full horizon in bounded windows.
+  for(let windowStart=from;windowStart<to;windowStart+=30*86400000){
+  const windowEnd=Math.min(to,windowStart+30*86400000);
   for(let i=0;i<ids.length;i+=50){
     const group=ids.slice(i,i+50);
-    const r=await fetcher('https://www.googleapis.com/calendar/v3/freeBusy',{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({timeMin:start,timeMax:end,timeZone:'Asia/Seoul',items:group.map(id=>({id}))}),signal:AbortSignal.timeout(10000),cache:'no-store'});
+    const r=await fetcher('https://www.googleapis.com/calendar/v3/freeBusy',{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({timeMin:new Date(windowStart).toISOString(),timeMax:new Date(windowEnd).toISOString(),timeZone:'Asia/Seoul',items:group.map(id=>({id}))}),signal:AbortSignal.timeout(10000),cache:'no-store'});
     if(!r.ok)throw new CalendarError('Google 일정 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     const d=await r.json() as {calendars?:Record<string,{busy?:Busy[];errors?:unknown[]}>};
     for(const id of group){const c=d.calendars?.[id];if(!c||c.errors?.length||!Array.isArray(c.busy))throw new CalendarError('일부 캘린더 일정을 확인하지 못해 예약을 잠시 중지했습니다.');for(const span of c.busy){if(!Number.isFinite(Date.parse(span.start))||!Number.isFinite(Date.parse(span.end))||Date.parse(span.start)>=Date.parse(span.end))throw new CalendarError('캘린더 시간 정보를 확인하지 못했습니다.');busy.push(span)}}
+  }
   }
   return busy;
 }
