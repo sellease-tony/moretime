@@ -27,7 +27,7 @@ test('reschedule is atomic, idempotent, preserves contacts and cancels without d
  const db=new PGlite();
  try{
   await db.exec("create schema auth;create role anon;create role authenticated;create role service_role bypassrls;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql stable as $$select null::uuid$$;");
-  for(const name of ['202609200001_moatime.sql','202609200002_calendar_links.sql','202609230001_saved_availability.sql','202609250001_calendar_background.sql','202609250002_guest_management.sql'])await db.exec(await readFile('supabase/migrations/'+name,'utf8'));
+  for(const name of ['202609200001_moatime.sql','202609200002_calendar_links.sql','202609230001_saved_availability.sql','202609250001_calendar_background.sql','202609250002_guest_management.sql','202609300001_travel_buffer.sql'])await db.exec(await readFile('supabase/migrations/'+name,'utf8'));
   const owner='c0000000-0000-4000-8000-000000000001',next='20000000-0000-4000-8000-000000000001',other='30000000-0000-4000-8000-000000000001',day=addDays(kstDay(),3);
   await db.query('insert into auth.users values($1,$2)',[owner,'host@example.com']);
   const b={id,eventId:'event',title:'Meeting',company:'ABC',meetingTitle:'ABC × 셀리즈 미팅',duration:30,day,time:'10:00',name:'Guest',email:'guest@example.com',phone:'01012345678',channels:['email'],notificationConsent:true};

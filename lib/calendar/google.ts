@@ -1,4 +1,4 @@
-export type Busy={start:string;end:string};
+export type Busy={start:string;end:string;bufferMinutes?:number};
 export class CalendarError extends Error{}
 export async function selectedCalendarIds(accessToken:string,fetcher:typeof fetch=fetch):Promise<string[]>{
   // Selected calendars, including the primary calendar; paginate instead of silently ignoring others.
@@ -27,14 +27,14 @@ export async function queryGoogleBusy(accessToken:string,start:string,end:string
   }
   return busy;
 }
-export function overlaps(start:string,end:string,busy:Busy[]){const s=Date.parse(start),e=Date.parse(end);return busy.some(b=>s<Date.parse(b.end)&&e>Date.parse(b.start))}
-export function availableSlots(day:string,duration:number,hours:boolean[],range:string[],busy:Busy[],now=new Date()){
+export function overlaps(start:string,end:string,busy:Busy[],bufferMinutes=0){const s=Date.parse(start),e=Date.parse(end);return busy.some(b=>{const gap=Math.max(bufferMinutes,b.bufferMinutes||0)*60000;return s<Date.parse(b.end)+gap&&e>Date.parse(b.start)-gap})}
+export function availableSlots(day:string,duration:number,hours:boolean[],range:string[],busy:Busy[],now=new Date(),bufferMinutes=0){
   if(!hours[new Date(day+'T12:00:00+09:00').getUTCDay()])return [];
   const minutes=(s:string)=>Number(s.slice(0,2))*60+Number(s.slice(3)),slots:string[]=[];
   for(let m=Math.ceil(minutes(range[0])/duration)*duration;m+duration<=minutes(range[1]);m+=duration){
     const time=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
     const start=new Date(day+'T'+time+':00+09:00'),end=new Date(start.getTime()+duration*60000);
-    if(start>now&&!overlaps(start.toISOString(),end.toISOString(),busy))slots.push(time);
+    if(start>now&&!overlaps(start.toISOString(),end.toISOString(),busy,bufferMinutes))slots.push(time);
   }
   return slots;
 }

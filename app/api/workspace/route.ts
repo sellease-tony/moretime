@@ -55,7 +55,7 @@ export async function POST(request:Request){
     if(changes.events){try{const constraints=await currentCalendarConstraints(user.id);state=applyCalendarBusy(state,constraints.busy,new Date(),true,constraints.holidays)}catch{return json({error:'Google 캘린더를 확인하지 못했습니다. 다시 연결한 후 저장해 주세요.'},503)}}
     if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
     for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
-      const event=state.events.find((e:{id:string})=>e.id===b.eventId);if(event)Object.assign(b,meetingFields(event,b.company));
+      const event=state.events.find((e:{id:string})=>e.id===b.eventId);if(event)Object.assign(b,meetingFields(event,b.company),{meetingMode:event.availability?.meetingMode||'online'});
       validateNewBooking(b,state);
 
     }catch(e){return json({error:e instanceof Error?e.message:'예약할 수 없습니다.'},400)}}

@@ -7,13 +7,13 @@ import {applyCalendarBusy,type CalendarState} from './availability-state';
 
 export async function currentCalendarBusy(owner:string){
  const today=kstDay();
- return ownerBusy(owner,new Date(today+'T00:00:00+09:00').toISOString(),new Date(addDays(today,91)+'T00:00:00+09:00').toISOString());
+ return ownerBusy(owner,new Date(addDays(today,-1)+'T00:00:00+09:00').toISOString(),new Date(addDays(today,92)+'T00:00:00+09:00').toISOString());
 }
 export async function currentCalendarConstraints(owner:string){
  const start=kstDay(),end=addDays(start,90);
- const [busy,holidays,bookings]=await Promise.all([currentCalendarBusy(owner),koreanHolidays(start,end),adminClient().from('moa_bookings').select('starts_at,ends_at').eq('owner_id',owner).eq('status','confirmed').gte('ends_at',start+'T00:00:00+09:00').lt('starts_at',addDays(end,1)+'T00:00:00+09:00')]);
+ const [busy,holidays,bookings]=await Promise.all([currentCalendarBusy(owner),koreanHolidays(start,end),adminClient().from('moa_bookings').select('starts_at,ends_at,payload').eq('owner_id',owner).eq('status','confirmed').gte('ends_at',addDays(start,-1)+'T00:00:00+09:00').lt('starts_at',addDays(end,2)+'T00:00:00+09:00')]);
  if(bookings.error)throw Error('예약된 시간을 확인하지 못했습니다.');
- return {busy:[...busy,...(bookings.data||[]).map(b=>({start:b.starts_at,end:b.ends_at}))],holidays,start,end,checkedAt:new Date().toISOString()};
+ return {busy:[...busy,...(bookings.data||[]).map(b=>({start:b.starts_at,end:b.ends_at,bufferMinutes:b.payload.meetingMode==='offline'?60:0}))],holidays,start,end,checkedAt:new Date().toISOString()};
 }
 export async function syncOwnerAvailability(owner:string,force=false){
  const db=adminClient();

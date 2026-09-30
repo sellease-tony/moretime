@@ -5,7 +5,7 @@ import {savedSlots} from '@/lib/availability';
 export async function loadOwner(owner:string){
   const db=adminClient();const [{data:row,error},{data:bookings,error:be}]=await Promise.all([db.from('moa_workspaces').select('data,revision').eq('owner_id',owner).maybeSingle(),db.from('moa_bookings').select('payload,starts_at,ends_at').eq('owner_id',owner).eq('status','confirmed')]);
   if(error||be)throw Error('예약 정보를 불러오지 못했습니다.');
-  return {state:{...defaultWorkspace,...(row?.data||{})} as typeof defaultWorkspace,revision:row?.revision||0,bookings:(bookings||[]).map(b=>b.payload as Booking),busy:(bookings||[]).map(b=>({start:b.starts_at,end:b.ends_at}))};
+  return {state:{...defaultWorkspace,...(row?.data||{})} as typeof defaultWorkspace,revision:row?.revision||0,bookings:(bookings||[]).map(b=>b.payload as Booking),busy:(bookings||[]).map(b=>({start:b.starts_at,end:b.ends_at,bufferMinutes:b.payload.meetingMode==='offline'?60:0}))};
 }
 export async function slotsFor(owner:string,eventId:string,day:string){
   const data=await loadOwner(owner),event=data.state.events.find(e=>e.id===eventId);

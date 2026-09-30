@@ -49,7 +49,7 @@ export async function POST(request:Request,context:Context){
     const {slots,event,data}=await slotsFor(target.owner_id,target.event_id,body.day);
     if(!slots.includes(body.time))return json({error:'해당 시간에 다른 일정이 있습니다. 다른 시간을 선택해 주세요.'},409);
     let fields;try{fields=meetingFields(event,body.company)}catch{return json({error:'회사명을 확인해 주세요. 필수인 경우 80자 이내로 입력해 주세요.'},400)}
-    const parsed=bookingSchema.safeParse({...fields,id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:[...new Set(['email',...(Array.isArray(body.channels)?body.channels:[])])],notificationConsent:body.notificationConsent===true});
+    const parsed=bookingSchema.safeParse({...fields,meetingMode:event.availability?.meetingMode||'online',id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:[...new Set(['email',...(Array.isArray(body.channels)?body.channels:[])])],notificationConsent:body.notificationConsent===true});
     if(!parsed.success)return json({error:parsed.error.issues[0].message},400);
     const booking=parsed.data;
     const db=adminClient();
