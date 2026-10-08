@@ -1,28 +1,12 @@
-import {defaultReminders,isReminder,reminderCanSend} from './reminders';
 import 'server-only';
 import {adminClient} from '@/lib/supabase/server';
-import {deliver,type NoticeJob} from './providers';
+import {type NoticeJob} from './providers';
+import {processClaimed} from './process';
 export async function processNotifications(owner?:string){
   const db=adminClient();
   const {data,error}=await db.rpc('moa_claim_notifications',{p_limit:6,p_owner:owner||null});
   if(error)throw new Error('알림 발송 대기열을 불러오지 못했습니다.');
-  const jobs=(data||[]) as NoticeJob[];
-  const results=await Promise.all(jobs.map(async job=>{
-    // A cancellation may supersede a claimed confirmation before a provider call begins.
-    const {data:booking,error:readError}=await db.from('moa_bookings').select('status,starts_at').eq('id',job.booking_id).single();
-    if(readError)throw new Error('예약 상태를 확인하지 못했습니다.');
-    let skip=job.event_type==='confirmed'&&booking?.status==='cancelled';
-    if(isReminder(job.event_type)){
-      const {data:settings,error:settingsError}=await db.from('moa_reminder_settings').select('reminder_24h,reminder_1h,guest,host').eq('owner_id',job.owner_id).maybeSingle();
-      if(settingsError)throw Error('리마인더 설정을 확인하지 못했습니다.');
-      skip=!booking||!reminderCanSend(job,booking,settings||defaultReminders);
-    }
-    const outcome=skip?{status:'superseded' as const}:await deliver(job);
-    const retry=outcome.status==='retry'&&job.attempts<3&&Date.now()+5*60_000<new Date(job.expires_at).getTime();
-    const status=outcome.status==='retry'?(retry?'pending':'failed'):outcome.status;
-    const {error:updateError}=await db.from('moa_notification_jobs').update({status,provider_id:'providerId' in outcome?outcome.providerId:null,last_error:'error' in outcome?outcome.error:null,available_at:new Date(Date.now()+job.attempts*60_000).toISOString(),lease_until:null,lease_token:null,updated_at:new Date().toISOString()}).eq('id',job.id).eq('lease_token',job.lease_token).eq('status','processing');
-    if(updateError)throw new Error('알림 처리 결과를 기록하지 못했습니다.');
-    return {id:job.id,status};
-  }));
+  const results=await processClaimed(db,(data||[]) as NoticeJob[]);
+  for(const r of results)if(r.error)console.error('notification_job_incomplete',r.id,r.status);
   return results;
 }
