@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {syncGoogleEvent,calendarEventId} from '../lib/calendar/events';
-const booking={id:'a0000000-0000-4000-8000-000000000001',title:'상담',meetingTitle:'ABC × 셀리즈 미팅',name:'예약자',email:'guest@example.com',day:'2030-01-01',time:'10:00',duration:30};
+const booking={id:'a0000000-0000-4000-8000-000000000001',title:'상담',meetingTitle:'ABC × 파트너 미팅',name:'예약자',email:'guest@example.com',day:'2030-01-01',time:'10:00',duration:30};
 test('writes the host primary calendar with stable ID, Korean time and no guest invitation',async()=>{
   let calls=0;
   const request=async(url:URL|RequestInfo,init?:RequestInit)=>{calls++;assert(String(url).includes('/calendars/primary/events'));assert.equal((init?.headers as Record<string,string>).Authorization,'Bearer host-token');if(calls===1)return new Response(null,{status:404});const event=JSON.parse(String(init?.body));assert.equal(event.id,calendarEventId(booking.id));assert.equal(event.start.dateTime,'2030-01-01T01:00:00.000Z');assert.equal(event.end.dateTime,'2030-01-01T01:30:00.000Z');assert.equal(event.summary,booking.meetingTitle);assert.equal(event.attendees,undefined);return Response.json(event)};
