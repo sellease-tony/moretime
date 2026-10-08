@@ -2,6 +2,8 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {defaultReminders,isReminder,reminderCanSend} from './reminders';
 import {deliver,type NoticeJob} from './providers';
 type Outcome={id:string;status:string;error?:string};
+// SMS and Kakao are not offered yet; older bookings may still carry those channels, so never contact SOLAPI for them.
+export const OFFERED_CHANNELS:readonly NoticeJob['channel'][]=['email'];
 // Each job settles on its own: one failure never strands the rest of the batch in processing.
 export async function processClaimed(db:SupabaseClient,jobs:NoticeJob[],send:typeof deliver=deliver):Promise<Outcome[]>{
   return Promise.all(jobs.map(job=>processJob(db,job,send)));
@@ -24,7 +26,7 @@ async function processJob(db:SupabaseClient,job:NoticeJob,send:typeof deliver):P
     await db.from('moa_notification_jobs').update({status:'pending',last_error:error,available_at:new Date(Date.now()+60_000).toISOString(),lease_until:null,lease_token:null,updated_at:new Date().toISOString()}).eq('id',job.id).eq('lease_token',job.lease_token).eq('status','processing');
     return {id:job.id,status:'released',error};
   }
-  const outcome=skip?{status:'superseded' as const}:await send(job);
+  const outcome=skip?{status:'superseded' as const}:!OFFERED_CHANNELS.includes(job.channel)?{status:'blocked' as const,error:'문자·카카오 알림톡은 아직 제공하지 않습니다.'}:await send(job);
   const retry=outcome.status==='retry'&&job.attempts<3&&Date.now()+5*60_000<new Date(job.expires_at).getTime();
   const status=outcome.status==='retry'?(retry?'pending':'failed'):outcome.status;
   const {error:updateError}=await db.from('moa_notification_jobs').update({status,provider_id:'providerId' in outcome?outcome.providerId:null,last_error:'error' in outcome?outcome.error:null,available_at:new Date(Date.now()+job.attempts*60_000).toISOString(),lease_until:null,lease_token:null,updated_at:new Date().toISOString()}).eq('id',job.id).eq('lease_token',job.lease_token).eq('status','processing');
