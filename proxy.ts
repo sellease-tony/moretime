@@ -1,5 +1,6 @@
 import {createServerClient} from '@supabase/ssr';
 import {NextResponse,type NextRequest} from 'next/server';
+import {isHost} from '@/lib/auth/role';
 
 export async function proxy(request:NextRequest){
   let response=NextResponse.next({request});
@@ -12,7 +13,8 @@ export async function proxy(request:NextRequest){
     }}
   });
   const {data,error}=await sb.auth.getClaims();
-  const signedIn=!error&&!!data?.claims?.sub&&data.claims.app_metadata?.provider==='google';
+  // Guests may hold a Google session for booking prefill; only hosts are routed into the workspace.
+  const signedIn=!error&&!!data?.claims?.sub&&isHost(data.claims.app_metadata);
   const path=request.nextUrl.pathname;
   const target=path==='/'&&signedIn?'/app':(path==='/app'||path.startsWith('/app/'))&&!signedIn?'/':null;
   if(target){
