@@ -14,11 +14,18 @@ export async function PATCH(request:Request,ctx:Context){if(!sameOrigin(request)
  if(body.action==='confirm'){
   if(p.status==='confirmed'&&p.selected_slot===body.slot)return json({ok:true});
   if(p.status!=='open'||body.revision!==p.revision||!p.candidates.includes(body.slot))return json({error:'응답이 변경되었습니다. 새로고침해 주세요.'},409);
-  const {data:w,error:we}=await db.from('moa_workspaces').select('revision').eq('owner_id',user.id).maybeSingle();if(we)throw Error('저장소 확인 실패');
   await checkCandidates(user.id,[body.slot],p.duration,p.meeting_mode);
-  const {data:bid,error:ce}=await db.rpc('moa_confirm_poll',{p_poll:id,p_owner:user.id,p_revision:p.revision,p_workspace_revision:w?.revision||0,p_slot:body.slot,p_mode:notificationMode()});
-  if(ce)return json({error:'확정하지 못했습니다. 예상 인원 전원이 응답했고 모두 가능한 시간인지, 다른 예약이 생겼는지 새로고침해 확인해 주세요.'},409);
-  after(async()=>{await Promise.allSettled([syncBooking(user.id,bid),processNotifications(user.id)])});return json({ok:true});
+  // Background calendar sync bumps the workspace revision often; read it after the Google check and retry
+  // only that race. The poll revision stays strict and the RPC rechecks booking overlaps under the row lock.
+  let bid:string|null=null,ce:{message:string}|null=null;
+  for(let attempt=0;attempt<3;attempt++){
+   const {data:w,error:we}=await db.from('moa_workspaces').select('revision').eq('owner_id',user.id).maybeSingle();if(we)throw Error('저장소 확인 실패');
+   ({data:bid,error:ce}=await db.rpc('moa_confirm_poll',{p_poll:id,p_owner:user.id,p_revision:p.revision,p_workspace_revision:w?.revision||0,p_slot:body.slot,p_mode:notificationMode()}));
+   if(!ce?.message.includes('stale_revision'))break;
+   const {data:now}=await db.from('moa_polls').select('revision').eq('id',id).maybeSingle();if(now?.revision!==p.revision)break;
+  }
+  if(ce)return json({error:ce.message.includes('overlapping_booking')?'그 사이 같은 시간에 다른 예약이 생겼습니다. 다른 후보를 선택해 주세요.':ce.message.includes('not_unanimous')?'예상 인원 전원이 응답했고 모두 가능한 시간만 확정할 수 있습니다.':'응답이나 일정이 변경되었습니다. 새로고침 후 다시 확인해 주세요.'},409);
+  after(async()=>{await Promise.allSettled([syncBooking(user.id,bid!),processNotifications(user.id)])});return json({ok:true});
  }
  if(body.action==='cancel'){
   if(p.status==='confirmed'){
