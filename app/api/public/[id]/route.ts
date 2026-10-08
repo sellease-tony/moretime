@@ -9,6 +9,8 @@ import {loadOwner,slotsFor,validDay} from '@/lib/bookings/server';
 import {bookingSchema} from '@/lib/workspace';
 import {processNotifications} from '@/lib/notifications/worker';
 import {notificationMode} from '@/lib/notifications/providers';
+import {allowRequest} from '@/lib/rate-limit/server';
+import {clientIp} from '@/lib/rate-limit/key';
 export const runtime='nodejs';export const dynamic='force-dynamic';export const maxDuration=60;
 type Context={params:Promise<{id:string}>};
 const json=(b:unknown,s=200)=>Response.json(b,{status:s,headers:{'Cache-Control':'private, no-store'}});
@@ -44,6 +46,8 @@ export async function POST(request:Request,context:Context){
       if(existing.status==='confirmed'&&existing.payload.email===email&&existing.payload.eventId===target.event_id&&existing.payload.name===name&&existing.payload.phone===phone&&existing.payload.day===body.day&&existing.payload.time===body.time){after(async()=>{await syncBooking(target.owner_id,body.id)});return json({ok:true,id:body.id,meetingTitle:existing.payload.meetingTitle||existing.payload.title,mode:notificationMode(),calendar:{pending:true}});}
       return json({error:'이미 처리된 예약 요청입니다.'},409);
     }
+    // Idempotent retries above are never throttled; new requests are capped per visitor and per booking link.
+    if(!await allowRequest([{scope:'book-ip',value:clientIp(request.headers),limit:10},{scope:'book-link',value:(await context.params).id,limit:60}]))return json({error:'요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'},429);
     if(!validDay(body.day||''))return json({error:'예약 날짜를 확인해 주세요.'},400);
     // Read saved host slots; the workspace revision and overlap check protect the transaction.
     const {slots,event,data}=await slotsFor(target.owner_id,target.event_id,body.day);
