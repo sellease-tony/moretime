@@ -2,7 +2,7 @@ import {companySchema,companyModeSchema,meetingTemplateSchema} from './bookings/
 import {z} from 'zod';
 import type {Availability} from './availability';
 type Event={id:string;title:string;desc:string;duration:number;color:string;team:boolean;active:boolean;companyMode?:'hidden'|'optional'|'required';meetingTitleTemplate?:string;availability?:Availability};
-export const defaultEvents:Event[]=[{id:'coffee',title:'가볍게 나누는 커피챗',desc:'새로운 연결의 시작, 편하게 이야기 나눠요.',duration:30,color:'blue',team:false,active:true},{id:'project',title:'프로젝트 상담',desc:'아이디어를 함께 구체화하는 시간입니다.',duration:60,color:'purple',team:false,active:true},{id:'sync',title:'빠른 싱크업',desc:'짧고 집중해서, 필요한 이야기만 나눠요.',duration:15,color:'orange',team:false,active:true},{id:'team',title:'서비스 데모 미팅',desc:'우리 팀과 함께 서비스를 살펴보세요.',duration:30,color:'green',team:true,active:true}];
+export const defaultEvents:Event[]=[{id:'coffee',title:'가볍게 나누는 커피챗',desc:'새로운 연결의 시작, 편하게 이야기 나눠요.',duration:30,color:'blue',team:false,active:true},{id:'project',title:'프로젝트 상담',desc:'아이디어를 함께 구체화하는 시간입니다.',duration:60,color:'purple',team:false,active:true},{id:'sync',title:'빠른 싱크업',desc:'짧고 집중해서, 필요한 이야기만 나눠요.',duration:15,color:'orange',team:false,active:true},{id:'team',title:'서비스 데모 미팅',desc:'서비스를 함께 살펴보는 시간입니다.',duration:30,color:'green',team:false,active:true}];
 export const defaultWorkspace={events:defaultEvents,hours:[false,true,true,true,true,true,false],range:['09:00','18:00']};
 const clock=z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const dayKey=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(v+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===v},'날짜를 확인해 주세요.');
