@@ -8,14 +8,24 @@
 
 GitHub: https://github.com/sellease-tony/moretime
 
-코드·SQL·환경변수 예제·모의 테스트를 준비했습니다. 실제 Supabase 프로젝트 적용, Vercel 배포, Google 로그인 및 메시지 수신 검증은 외부 서비스 설정 후 진행해야 합니다. 기존 검토 사이트는 자동 변경되지 않습니다.
+운영 Supabase 프로젝트는 `moretime`(서울 리전)이며, 아래 마이그레이션은 모두 SQL Editor로 적용되어 있습니다(2026-10-08 확인). 기존 검토 사이트는 자동 변경되지 않습니다.
 
 ## 1. Supabase
 
-1. 프로젝트를 생성하고 SQL Editor에서 아래 파일을 순서대로 **한 번씩** 실행합니다.
-   - `supabase/migrations/202609200001_moatime.sql`
-   - `supabase/migrations/202609200002_calendar_links.sql`
-   - `supabase/migrations/202609230001_saved_availability.sql`
+1. 프로젝트를 생성하고 SQL Editor에서 `supabase/migrations/`의 파일을 **파일명 순서대로 한 번씩** 실행합니다. 새 마이그레이션은 해당 코드를 배포하기 **전에** 적용합니다.
+
+   | 파일 | 내용 |
+   |---|---|
+   | `202609200001_moatime.sql` | 워크스페이스·예약·알림 작업 테이블, 예약 저장·알림 큐 함수 |
+   | `202609200002_calendar_links.sql` | Google 연결(암호화 토큰), 공개 링크 |
+   | `202609230001_saved_availability.sql` | 페이지별 저장 가능 시간 검증 |
+   | `202609250001_calendar_background.sql` | 캘린더 백그라운드 작업 큐·watch 채널 |
+   | `202609250002_guest_management.sql` | 게스트 변경·취소, 캘린더 반영 대기 표시 |
+   | `202609290001_reminders.sql` | 이메일 리마인더 설정·생성 |
+   | `202609300001_travel_buffer.sql` | 오프라인 미팅 이동시간 검사 |
+   | `202609300002_polls.sql` | 그룹 일정 투표 |
+   | `202610080001_host_role.sql` | 기존 주최자에게 `moa_role='host'` 부여(적용하지 않으면 주최자가 한 번 다시 로그인하면 됨) |
+   | `202610080002_rate_limits.sql` | 공개 예약·투표 응답 요청 제한 |
 2. Project URL, Publishable key, Secret key를 확인합니다.
 3. URL/Publishable key만 `NEXT_PUBLIC_*` 변수에 사용합니다. Secret key 또는 기존 `service_role` key는 `SUPABASE_SECRET_KEY`에만 넣습니다.
 
@@ -26,8 +36,12 @@ GitHub: https://github.com/sellease-tony/moretime
 | `moa_notification_jobs` | 채널·수신자별 발송 대기 기록과 결과 |
 | `moa_google_connections` | 서버에서 암호화한 Google refresh token |
 | `moa_public_links` | 공개 링크와 주최자·예약 페이지 연결 |
+| `moa_calendar_jobs`, `moa_calendar_channels` | 캘린더 백그라운드 작업과 Google watch 채널 |
+| `moa_reminder_settings` | 주최자별 리마인더 설정 |
+| `moa_polls`, `moa_poll_responses` | 그룹 일정 투표와 비공개 응답 |
+| `moa_rate_limits` | 공개 요청 제한 카운터(해시 키만 저장) |
 
-RLS는 사용자 자신의 데이터만 조회하도록 제한합니다. 쓰기는 Google 사용자를 검증한 서버 API에서만 가능하며, Google 토큰은 브라우저 조회를 허용하지 않습니다.
+RLS는 사용자 자신의 데이터만 조회하도록 제한합니다. 쓰기는 서버 API에서만 가능하며, Google 토큰·투표·요청 제한 테이블은 service_role 전용입니다. 주최자 API는 `app_metadata.moa_role='host'`인 Google 사용자만 통과합니다. 이 값은 주최자 로그인(캘린더 권한 동의) 흐름에서 서버가 기록하며, 예약 화면에서 입력 편의로 로그인한 게스트에게는 부여하지 않습니다.
 
 기존 D1 기록은 자동 복사하지 않습니다. 데모 쿠키에는 Google 사용자 정보가 없으므로 보존하려면 별도 내보내기와 소유자 매핑이 필요합니다. 이번 작업에서는 기존 D1 데이터를 삭제하지 않았습니다.
 
@@ -59,7 +73,7 @@ https://www.googleapis.com/auth/calendar.events.owned
 
 Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니다. 게스트 조회·확정은 Google 조회 없이 저장된 가능 시간과 DB 예약 충돌로 검증합니다. Google 테스트 앱의 사용자 제한·토큰 만료 및 공개 서비스의 권한 검증 필요 여부를 확인하세요. [Supabase Google 설정](https://supabase.com/docs/guides/auth/social-login/auth-google), [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [FreeBusy API](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query)
 
-예약 가능 시간은 주최자가 페이지별로 선택하거나 Google에서 가져온 뒤 moa_workspaces.data.events[].availability에 저장합니다. 예약자는 로그인 없이 이름·이메일·휴대전화와 수신 동의를 입력해 예약할 수 있습니다. Google 로그인은 입력 편의를 위한 선택 사항이며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 설정의 예약·취소 캘린더 반영 재시도로 복구합니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. 자동 재시도 스케줄러는 없으며 기존 예약도 재시도 버튼으로 반영합니다. Google에서 직접 변경한 일정은 주최자가 기간을 다시 가져와 저장해야 반영됩니다. 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
+예약 가능 시간은 주최자가 페이지별로 선택하거나 Google에서 가져온 뒤 moa_workspaces.data.events[].availability에 저장합니다. 예약자는 로그인 없이 이름·이메일·휴대전화와 수신 동의를 입력해 예약할 수 있습니다. Google 로그인은 입력 편의를 위한 선택 사항이며 캘린더 권한을 요청하지 않습니다. 확정 예약은 주최자의 기본 Google 캘린더에 생성하고 취소 시 삭제합니다. 기존 주최자는 설정 및 연동 → Google 캘린더 다시 연결에서 쓰기 권한에 동의해야 합니다. 실패 시 DB 예약은 유지되며 백그라운드 작업이 다시 반영합니다. 설정의 예약·취소 캘린더 반영 재시도 버튼으로 직접 복구할 수도 있습니다. 예약 ID 기반 이벤트 ID로 중복 생성을 막습니다. Google에서 직접 변경한 일정은 webhook과 1분 주기 동기화로 가능 시간에 반영됩니다([캘린더 백그라운드](CALENDAR-BACKGROUND.ko.md)). 서비스 내부 중복 예약은 DB 잠금으로 막습니다.
 
 ## 3. 이메일: Resend
 
@@ -67,11 +81,13 @@ Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니�
 2. API key를 생성합니다.
 3. `RESEND_API_KEY`, `EMAIL_FROM`을 설정합니다. 발신 주소 예: `모아타임 <booking@your-domain.com>`.
 
-예약 확정·취소 시 **예약자와 주최자 각각**에게 요청합니다. 두 이메일이 같으면 한 통만 보냅니다. 주최자 주소는 Supabase 사용자 정보에서, 외부 예약자 주소는 예약 폼에 입력한 알림받을 이메일에서 가져옵니다. 비회원 이메일은 소유권을 인증한 주소가 아니며, 형식 검증과 수신 주소별 일일 예약 제한을 적용합니다.
+예약 확정·취소·변경 시 **예약자와 주최자 각각**에게 요청합니다. 현재 제공하는 알림 채널은 이메일뿐입니다. 두 이메일이 같으면 한 통만 보냅니다. 주최자 주소는 Supabase 사용자 정보에서, 외부 예약자 주소는 예약 폼에 입력한 알림받을 이메일에서 가져옵니다. 비회원 이메일은 소유권을 인증한 주소가 아니며, 형식 검증과 수신 주소별 일일 예약 제한(20건), IP별 시간당 10건·예약 링크별 시간당 60건 제한을 적용합니다.
 
 동일 작업은 동일 Idempotency-Key를 사용합니다. 공급자의 24시간 중복 방지 기간 안에서 처리하도록 작업 유효 기간을 23시간으로 제한하고, 일시적 이메일 오류는 최대 3회 시도합니다. [도메인 인증](https://resend.com/docs/dashboard/domains/introduction), [Idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys)
 
-## 4. 문자: SOLAPI
+## 4. 문자: SOLAPI (현재 미제공)
+
+> 문자·카카오 알림톡은 아직 제공하지 않습니다. 예약자 화면에서 선택할 수 없고, 발송 작업자는 문자·알림톡 작업을 공급자에 보내지 않고 `blocked`로 기록합니다(`lib/notifications/process.ts`의 `OFFERED_CHANNELS`). 아래 4·5절은 추후 제공 시 참고용입니다.
 
 1. SOLAPI 계정의 인증 절차를 완료합니다.
 2. 실제 **발신번호를 등록·인증**하고 요금/잔액을 준비합니다.
@@ -80,7 +96,7 @@ Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니�
 
 문자 수신을 선택한 국내 휴대전화로 확정·취소 알림을 보냅니다. 본문 길이를 고려해 **LMS 장문 문자**로 요청합니다. [공식 발송 예제](https://solapi.com/developers/sdk/nodejs-sendingexample)
 
-## 5. 카카오 알림톡: SOLAPI
+## 5. 카카오 알림톡: SOLAPI (현재 미제공)
 
 1. 카카오톡 비즈니스 채널을 SOLAPI에 연결합니다.
 2. 채널 PF ID를 `KAKAO_PF_ID`에 입력합니다.
@@ -127,15 +143,13 @@ Google 가져오기에 실패하면 기존 가능 시간 선택을 유지합니�
 | `CALENDAR_TOKEN_ENCRYPTION_KEY` | 32바이트 base64 비밀키 |
 | `NOTIFICATION_MODE` | `off` / `dry-run` / `live` |
 | `RESEND_API_KEY`, `EMAIL_FROM` | 이메일 설정 |
-| `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_FROM` | 문자·알림톡 공통 설정 |
-| `KAKAO_PF_ID` | 채널 ID |
-| `KAKAO_TEMPLATE_CONFIRMED`, `KAKAO_TEMPLATE_CANCELLED` | 승인 템플릿 ID |
+| `SOLAPI_*`, `KAKAO_*` | 문자·알림톡용. 현재 미제공이라 비워 둬도 됩니다 |
 | `CRON_SECRET` | 32자 이상 무작위 비밀값 |
 
 4. Deploy 후 최종 URL을 `APP_URL`과 Supabase URL Configuration에 맞추고 재배포합니다. 도메인 변경 시도 동일합니다.
 5. Google 로그인 → 예약 페이지 생성 → 링크 복사 → 로그인하지 않은 브라우저에서 이름·이메일·연락처를 입력해 공개 링크 예약 → 양쪽 이메일 수신 순서로 검증합니다.
 
-예약 직후 `after()`로 즉시 발송을 처리합니다. 현재 Hobby 초기 배포를 위해 `vercel.json`에는 Cron을 등록하지 않았으며 알림 모드는 `off`로 유지합니다. 실제 알림 운영 전에 남은 대기/재시도를 처리하는 스케줄러를 연결해야 합니다. 1분 Cron 지원 플랜에서는 `"crons": [{"path":"/api/cron/notifications","schedule":"* * * * *"}]`를 추가할 수 있습니다. 엔드포인트는 Authorization 헤더의 `CRON_SECRET`으로 보호합니다. Hobby는 하루 한 번 제한이 있습니다. [Cron 운영](https://vercel.com/docs/cron-jobs/manage-cron-jobs), [플랜별 주기](https://vercel.com/docs/cron-jobs/usage-and-pricing)
+예약 직후 `after()`로 즉시 발송을 처리합니다. 남은 대기·재시도와 캘린더 작업은 Vercel Cron이 아니라 Supabase `pg_cron`이 매분 호출합니다(Hobby 플랜에서도 동작). 등록 방법은 [스케줄러 가이드](SCHEDULER.ko.md)를 참고하세요. 엔드포인트는 Authorization 헤더의 `CRON_SECRET`으로 보호합니다.
 
 GitHub push가 자동 배포되려면 Vercel Import 연결을 먼저 완료해야 합니다.
 
@@ -148,7 +162,9 @@ GitHub push가 자동 배포되려면 Vercel Import 연결을 먼저 완료해�
 - `unknown`: 문자·알림톡 접수 여부가 불명확함. 중복과금 방지를 위해 자동 재발송하지 않습니다.
 - `expired`: 23시간 지난 대기 작업은 발송하지 않습니다.
 
-예약과 알림은 별개이며 알림 실패가 예약을 취소하지 않습니다. 설정 화면에서 최근 기록을 확인합니다. `blocked`/`unknown`의 재발송은 공급자 기록 대조 후 운영자 처리가 필요합니다. 자동 재발송 버튼은 제공하지 않습니다.
+- `blocked`: 키가 없거나 제공하지 않는 채널(문자·알림톡)이라 보내지 않음.
+
+예약과 알림은 별개이며 알림 실패가 예약을 취소하지 않습니다. 발송 전 확인(예약 상태·리마인더 설정 조회)에 실패한 작업은 공급자에 연락하기 전이므로 대기열로 되돌려 다시 처리합니다. 설정 화면에서 최근 기록을 확인합니다. `blocked`/`unknown`의 재발송은 공급자 기록 대조 후 운영자 처리가 필요합니다. 자동 재발송 버튼은 제공하지 않습니다.
 
 ## 검증 범위와 후속 작업
 
@@ -156,7 +172,7 @@ GitHub push가 자동 배포되려면 Vercel Import 연결을 먼저 완료해�
 
 실제 Supabase/Google/Resend/SOLAPI 성공은 키와 계정 설정 후 확인해야 합니다. 이번 작업에서 외부 메시지나 요금제 결제를 실행하지 않았습니다.
 
-후속 범위: 기업 조직 권한·팀원 초대·다중 주최자 공동 가능 시간, Google Calendar 이벤트 생성, 셀프 취소/변경, 미팅 전 리마인더, 최종 수신 Webhook, 운영 개인정보 보존·삭제 정책.
+후속 범위: 기업 조직 권한·팀원 초대·다중 주최자 공동 가능 시간, 문자·카카오 알림톡, 최종 수신 Webhook, `blocked`/`unknown` 재발송 도구, 운영 개인정보 보존·삭제 정책.
 
 ## 페이지별 가능 시간
 예약 페이지 만들기 또는 카드의 날짜·가능 시간 설정에서 날짜별 시작 시간을 선택합니다. 주간 가능 시간은 기간 채우기에 쓰는 템플릿이며, 직접 고른 날짜는 요일 제한과 무관하게 저장할 수 있습니다. Google 빈 시간 자동 선택은 선택한 기간만 교체하며 저장 버튼을 눌러야 공개됩니다. 기존 페이지는 날짜를 처음 설정하기 전까지 예약을 받지 않습니다.

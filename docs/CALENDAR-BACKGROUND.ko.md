@@ -8,7 +8,7 @@ Supabase Vault에 같은 값을 `moretime_calendar_cron` 이름으로 저장한�
 구글 권한은 기존 calendar.events.freebusy / calendar.events.owned 및
 calendar.calendarlist.readonly를 사용한다. 게스트 권한은 변경하지 않는다.
 
-Supabase에서 pg_cron, pg_net 확장을 활성화하고 다음 작업을 등록한다.
+Supabase에서 pg_cron, pg_net 확장을 활성화하고 다음 작업을 등록한다. 알림 작업까지 포함한 전체 등록 방법은 [스케줄러 가이드](SCHEDULER.ko.md)를 참고한다.
 비밀 값 자체를 SQL 파일, Git 또는 cron 명령에 직접 넣지 않는다.
 
 ```sql
