@@ -1,7 +1,7 @@
 import {meetingFields} from '@/lib/bookings/meeting';
 import {managementUrl} from '@/lib/bookings/manage-token';
 import {guestContactSchema} from '@/lib/bookings/guest';
-import {monthSlots,savedSlots,kstDay} from '@/lib/availability';
+import {monthSlots,savedSlots,kstDay,addDays,nextAvailableDay} from '@/lib/availability';
 import {syncBooking} from '@/lib/calendar/sync';
 import {after} from 'next/server';
 import {googleUser,adminClient,supabaseConfigured} from '@/lib/supabase/server';
@@ -26,7 +26,11 @@ export async function GET(request:Request,context:Context){
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return json({error:'월을 확인해 주세요.'},400);
     const days=monthSlots(event.availability,month,event.duration,owner.busy);
     const user=await googleUser();
-    return json({event:{title:event.title,desc:event.desc,duration:event.duration,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
+    // Only the host's display name is shown to guests, never their email.
+    const {data:hostUser}=await adminClient().auth.admin.getUserById(target.owner_id);
+    const hostName=String(hostUser?.user?.user_metadata?.full_name||hostUser?.user?.user_metadata?.name||'').slice(0,80)||null;
+    const today=kstDay(),nextDay=Object.values(days).some(s=>s.length)?null:nextAvailableDay(event.availability,today,addDays(today,90),event.duration,owner.busy);
+    return json({event:{title:event.title,desc:event.desc,duration:event.duration,meetingMode:event.availability?.meetingMode||'online',hostName,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},nextDay,slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
   }catch(e){return json({error:e instanceof Error?e.message:'예약 페이지를 불러오지 못했습니다.'},503)}
 }
 export async function POST(request:Request,context:Context){

@@ -19,3 +19,7 @@ export function permitsTime(options:{includeWeekends?:boolean;includeLunch?:bool
  const minute=Number(time.slice(0,2))*60+Number(time.slice(3));
  return options?.includeLunch!==false||!(minute<13*60&&minute+duration>12*60);
 }
+// First saved day on or after `from` (and not after `until`) that still has a bookable slot.
+export function nextAvailableDay(availability:Availability|undefined,from:string,until:string,duration:number,busy:Busy[],now=new Date()){
+ return Object.keys(availability?.days||{}).filter(day=>day>=from&&day<=until).sort().find(day=>savedSlots(availability,day,duration,busy,now).length)||null;
+}
