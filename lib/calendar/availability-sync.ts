@@ -3,7 +3,7 @@ import 'server-only';
 import {adminClient} from '@/lib/supabase/server';
 import {ownerBusy} from './server';
 import {addDays,kstDay} from '@/lib/availability';
-import {applyCalendarBusy,type CalendarState} from './availability-state';
+import {applyCalendarBusy,onlyCheckTimeChanged,type CalendarState} from './availability-state';
 
 export async function currentCalendarBusy(owner:string){
  const today=kstDay();
@@ -30,7 +30,8 @@ export async function syncOwnerAvailability(owner:string,force=false){
   const {data:row,error:readError}=attempt===0?{data:initial,error:null}:await db.from('moa_workspaces').select('data,revision').eq('owner_id',owner).single();
   if(readError||!row)throw Error('가능 시간을 불러오지 못했습니다.');
   const state=applyCalendarBusy(row.data as CalendarState,busy,new Date(),ok,holidays);
-  const {data:updated,error:writeError}=await db.from('moa_workspaces').update({data:state,revision:row.revision+1,updated_at:new Date().toISOString()}).eq('owner_id',owner).eq('revision',row.revision).select('revision');
+  const unchanged=onlyCheckTimeChanged(row.data as CalendarState,state);
+  const {data:updated,error:writeError}=await db.from('moa_workspaces').update({data:state,...(unchanged?{}:{revision:row.revision+1}),updated_at:new Date().toISOString()}).eq('owner_id',owner).eq('revision',row.revision).select('revision');
   if(writeError)throw Error('가능 시간을 갱신하지 못했습니다.');
   if(updated?.length)return ok;
   // Refresh Google data after a concurrent commit; never retry an old snapshot.

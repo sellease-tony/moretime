@@ -1,5 +1,6 @@
 import {savedSlots,type Availability} from '../availability';
 import type {Busy} from './google';
+import {isDeepStrictEqual} from 'node:util';
 type Event={id:string;duration:number;availability?:Availability};
 type Selection={updatedAt:string;days:Record<string,string[]>};
 export type CalendarState={events:Event[];calendarSelection?:Record<string,Selection>;calendarSync?:{checkedAt:string;ok:boolean};[key:string]:unknown};
@@ -16,4 +17,11 @@ export function applyCalendarBusy<T extends CalendarState>(state:T,busy:Busy[],n
   return {...event,availability:{...a,days}};
  });
  return {...state,events,calendarSelection:selections,calendarSync:{checkedAt:now.toISOString(),ok}};
+}
+// True when a sync produced the same availability and only refreshed its check time.
+// Such writes must not bump the workspace revision, or every background sync would invalidate
+// in-flight host saves and poll confirmations. Key order is ignored because jsonb reorders keys.
+export function onlyCheckTimeChanged(previous:CalendarState,next:CalendarState){
+ const strip=(s:CalendarState)=>({...s,calendarSync:s.calendarSync&&{ok:s.calendarSync.ok}});
+ return isDeepStrictEqual(strip(previous),strip(next));
 }
