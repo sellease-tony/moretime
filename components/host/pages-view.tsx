@@ -1,0 +1,28 @@
+"use client";
+import {Clock3,Users,Plus,ArrowUpRight,Video,Search,ShieldCheck,LayoutGrid,ArrowRight,CalendarCheck,Trash2,Link2} from 'lucide-react';
+import type {Poll} from '@/lib/polls/model';
+import type {HostEvent,Workspace} from './use-workspace';
+export type KindFilter='all'|'booking'|'poll';
+type Props={ws:Workspace;query:string;onQuery:(q:string)=>void;kind:KindFilter;onKind:(k:KindFilter)=>void;
+ onCreate:()=>void;onAvailability:()=>void;onToggleActive:(e:HostEvent)=>void;
+ onEdit:(e:HostEvent)=>void;onDelete:(e:HostEvent)=>void;onInvite:(e:HostEvent)=>void;onPreview:(e:HostEvent)=>void;onPoll:(p:Poll)=>void};
+
+export default function PagesView({ws,query,onQuery,kind,onKind,onCreate,onAvailability,onToggleActive,onEdit,onDelete,onInvite,onPreview,onPoll}:Props){
+ const {events,polls,hours,busy,setup,user,pollError,pollLoading}=ws;
+ const filtered=kind==='poll'?[]:events.filter(e=>e.title.includes(query));
+ const filteredPolls=kind==='booking'?[]:polls.filter(p=>p.title.includes(query));
+ const copyPoll=async(p:Poll)=>{try{await navigator.clipboard.writeText(location.origin+'/poll/'+p.id);ws.notify('투표 링크를 복사했습니다.')}catch{ws.notify('링크를 복사하지 못했습니다.')}};
+ return <>
+  <section className="overview"><div className="overviewcopy"><span className="overviewicon"><CalendarCheck size={24}/></span><div><strong>좋은 만남은, 간편한 예약에서 시작되니까.</strong><p>가능한 시간을 설정하고 나만의 예약 링크를 공유해 보세요.</p><button onClick={onAvailability}>가능 시간 설정하기 <ArrowRight size={15}/></button></div></div><div className="miniweek"><div>MY AVAILABILITY <span>Asia/Seoul</span></div><section>{['월','화','수','목','금'].map((d,i)=><div key={d}><small>{d}</small><i className={hours[i+1]?'on':''}/><i className={hours[i+1]?'on':''}/></div>)}</section></div></section>
+  <div className="toolbar"><div className="tabs" aria-label="예약 유형 필터"><button className={kind==='all'?'chosen':''} onClick={()=>onKind('all')}>전체 <span>{events.length+polls.length}</span></button><button className={kind==='booking'?'chosen':''} onClick={()=>onKind('booking')}>1:1 예약 <span>{events.length}</span></button><button className={kind==='poll'?'chosen':''} onClick={()=>onKind('poll')}>여러 명 투표 <span>{polls.length}</span></button></div><label className="search"><Search size={17}/><input aria-label="예약 페이지 검색" placeholder="예약 페이지 검색" value={query} onChange={e=>onQuery(e.target.value)}/></label></div>
+  <div className="sectionmeta"><span>예약 페이지 <b>{filtered.length+filteredPolls.length}</b></span><span><LayoutGrid size={14}/>카드 보기</span></div>
+  {pollError&&<p role="alert" className="notice">{pollError}<button onClick={ws.reloadPolls}>다시 불러오기</button></p>}{pollLoading&&!polls.length&&<p role="status">여러 명 일정을 불러오는 중…</p>}
+  <div className="cards">
+   {filtered.map(e=><article className={'eventcard '+e.color} key={e.id}><div className="cardtop"><button className="delete-page" disabled={busy} aria-label={e.title+' 삭제'} onClick={()=>onDelete(e)}><Trash2 size={18}/>삭제</button><span className="eventicon"><Video size={23}/></span><label className="switch"><input type="checkbox" aria-label={e.title+' 활성화'} checked={e.active} onChange={()=>onToggleActive(e)}/><span/></label></div><span className="eventkind">1:1 예약</span><h2>{e.title}</h2><p>{e.desc}</p><div className="eventdetails"><span><Clock3 size={15}/>{e.duration}분</span><span><Video size={15}/>{e.availability?.meetingMode==='offline'?'오프라인 · 전후 1시간':'온라인 미팅'}</span></div><small className="availability-state">{e.availability?`${Object.values(e.availability.days as Record<string,string[]>).filter(s=>s.length).length}일 가능 시간 설정됨`:'가능한 날짜를 먼저 설정해 주세요'}</small><button className="edit-availability" onClick={()=>onEdit(e)}>날짜·가능 시간 설정</button>{e.companyMode&&e.companyMode!=='hidden'&&<button className="edit-availability" onClick={()=>onInvite(e)}>고객사 지정 링크 만들기</button>}<div className="cardbottom"><button onClick={()=>onPreview(e)}>미리보기 <ArrowUpRight size={14}/></button><button className="copy" onClick={()=>ws.copyLink(e)}><Link2 size={15}/>링크 복사</button></div></article>)}
+   {filteredPolls.map(p=><article className="eventcard purple group-card" key={'poll-'+p.id}><div className="cardtop"><span className="eventicon"><Users size={23}/></span><span className="pill">{p.status==='open'?'응답 모집 중':p.status==='confirmed'?'확정':'종료'}</span></div><span className="eventkind">여러 명 일정 투표</span><h2>{p.title}</h2><p>{p.description||'참석자들이 가능한 시간을 선택하고, 주최자가 공통 시간을 확정합니다.'}</p><div className="eventdetails"><span><Clock3 size={15}/>{p.duration}분</span><span><Users size={15}/>예상 {p.expected_count}명</span></div><small className="availability-state">{p.status==='confirmed'?p.selected_slot?.replace('T',' ')+' 확정':p.candidates.length+'개 후보 시간'}</small><button className="edit-availability" onClick={()=>onPoll(p)}>응답 확인·일정 관리</button><div className="cardbottom"><a href={'/poll/'+p.id} target="_blank" rel="noopener noreferrer">미리보기 <ArrowUpRight size={14}/></a><button className="copy" onClick={()=>copyPoll(p)}><Link2 size={15}/>링크 복사</button></div></article>)}
+   <button className="addcard" onClick={onCreate}><span><Plus size={25}/></span><strong>새로운 만남을 만들어보세요</strong><p>목적에 맞는 예약 페이지를 추가하세요.</p></button>
+  </div>
+  <section className="how">{[['예약 페이지 만들기','미팅 목적과 시간을 정해요.'],['나만의 링크 공유하기','이메일, 메신저 어디든 간편하게.'],['딱 맞는 시간에 만나기','상대방이 가능한 시간을 선택해요.']].map(([t,p],i)=><div key={t}><span className="step">0{i+1}</span><strong>{t}</strong><p>{p}</p></div>)}</section>
+  <div className="footnote"><ShieldCheck size={14}/>{setup?'Supabase와 Google 연결값을 설정하면 저장과 캘린더 조회를 사용할 수 있습니다.':user?'페이지별로 저장한 가능 시간에서 확정 예약을 제외해 보여줍니다.':'Google로 로그인하여 예약 페이지를 만들고 공유하세요.'}</div>
+ </>;
+}
