@@ -11,6 +11,7 @@ export default function PagesView({ws,query,onQuery,kind,onKind,onCreate,onAvail
  const {events,polls,hours,busy,setup,user,pollError,pollLoading}=ws;
  const filtered=kind==='poll'?[]:events.filter(e=>e.title.includes(query));
  const filteredPolls=kind==='booking'?[]:polls.filter(p=>p.title.includes(query));
+ if(!ws.ready)return <div className="pages-loading" role="status" aria-live="polite"><div className="cards">{[0,1,2].map(i=><div key={i} className="eventcard skeleton" aria-hidden="true"><span/><span/><span/></div>)}</div><p>예약 페이지를 불러오는 중…</p></div>;
  const copyPoll=async(p:Poll)=>{try{await navigator.clipboard.writeText(location.origin+'/poll/'+p.id);ws.notify('투표 링크를 복사했습니다.')}catch{ws.notify('링크를 복사하지 못했습니다.')}};
  return <>
   <section className="overview"><div className="overviewcopy"><span className="overviewicon"><CalendarCheck size={24}/></span><div><strong>좋은 만남은, 간편한 예약에서 시작되니까.</strong><p>가능한 시간을 설정하고 나만의 예약 링크를 공유해 보세요.</p><button onClick={onAvailability}>가능 시간 설정하기 <ArrowRight size={15}/></button></div></div><div className="miniweek"><div>MY AVAILABILITY <span>Asia/Seoul</span></div><section>{['월','화','수','목','금'].map((d,i)=><div key={d}><small>{d}</small><i className={hours[i+1]?'on':''}/><i className={hours[i+1]?'on':''}/></div>)}</section></div></section>

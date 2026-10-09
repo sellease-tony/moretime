@@ -11,7 +11,8 @@ export const seed:HostEvent[]=[{id:'coffee',title:'가볍게 나누는 커피챗
 // Host workspace state: initial load, background refresh, saves with revision, public links and polls.
 // `paused` (a modal is open) stops background refreshes so they never overwrite an edit in progress.
 export function useWorkspace({view,paused}:{view:string;paused:boolean}){
- const [events,setEvents]=useState<HostEvent[]>(seed),[bookings,setBookings]=useState<HostBooking[]>([]);
+ // Start empty: showing the demo seed to a signed-in host before their data arrives looks like lost pages.
+ const [events,setEvents]=useState<HostEvent[]>([]),[bookings,setBookings]=useState<HostBooking[]>([]);
  const [hours,setHours]=useState([false,true,true,true,true,true,false]),[range,setRange]=useState(['09:00','18:00']);
  const [ready,setReady]=useState(false),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
  const [user,setUser]=useState<HostUser>(null),[setup,setSetup]=useState(false),[mode,setMode]=useState('off');
