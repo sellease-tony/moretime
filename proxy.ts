@@ -1,8 +1,11 @@
 import {createServerClient} from '@supabase/ssr';
 import {NextResponse,type NextRequest} from 'next/server';
 import {isHost} from '@/lib/auth/role';
+import {legacyRedirect} from '@/lib/site';
 
 export async function proxy(request:NextRequest){
+  // Permanent move from the old vercel.app address; the URL fragment (guest management token) is kept by the browser.
+  const moved=legacyRedirect(request.nextUrl);if(moved)return NextResponse.redirect(moved,308);
   let response=NextResponse.next({request});
   if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)return response;
   const sb=createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,{
@@ -25,4 +28,4 @@ export async function proxy(request:NextRequest){
   response.headers.set('Cache-Control','private, no-store');
   return response;
 }
-export const config={matcher:['/','/app/:path*','/login','/auth/:path*','/book/:path*','/api/workspace','/api/integrations','/api/availability/:path*','/api/calendar/sync','/api/public-links','/api/public/:path*']};
+export const config={matcher:['/','/app/:path*','/login','/auth/:path*','/book/:path*','/booking/:path*','/poll/:path*','/privacy','/terms','/api/workspace','/api/integrations','/api/availability/:path*','/api/calendar/sync','/api/public-links','/api/public/:path*']};
