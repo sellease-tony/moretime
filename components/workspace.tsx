@@ -56,8 +56,8 @@ export default function Home(){
   <div className="mainwrap">
    <AppHeader view={view} setup={setup} user={user} onLogin={()=>setModal('login')}/>
    <main>
-    {calendarSync&&<div className="notice" role="status">{calendarSync.ok?`Google 캘린더 동기화 · ${new Date(calendarSync.checkedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})} (한국시간)`:<>Google 캘린더를 확인하지 못해 신규 예약을 잠시 중지했습니다. <a href="/auth/google">Google 다시 연결</a></>}</div>}
-    <div className="heading"><div><div className="eyebrow">MAKE TIME FOR WHAT MATTERS</div><h1>{view}</h1><p>{subtitle(view)}</p></div>{view==='예약 페이지'&&<button className="primary" onClick={createMeeting}><Plus size={18}/>예약 페이지 만들기</button>}</div>
+    {calendarSync&&!calendarSync.ok&&<div className="notice sync-warning" role="alert">Google 캘린더를 확인하지 못해 신규 예약을 잠시 중지했습니다. <a href="/auth/google">Google 다시 연결</a></div>}
+    <div className="heading"><div><div className="eyebrow">MAKE TIME FOR WHAT MATTERS</div><h1>{view}</h1><p>{subtitle(view)}</p>{calendarSync?.ok&&<p className="sync-status" role="status"><i aria-hidden="true"/>Google 캘린더 동기화됨 · {new Date(calendarSync.checkedAt).toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'})}</p>}</div>{view==='예약 페이지'&&<button className="primary" onClick={createMeeting}><Plus size={18}/>예약 페이지 만들기</button>}</div>
     {view==='예약 페이지'&&<PagesView ws={ws} query={query} onQuery={setQuery} kind={kind} onKind={setKind} onCreate={createMeeting} onAvailability={()=>setView('가능 시간')}
      onToggleActive={e=>save({events:events.map(x=>x.id===e.id?{...x,active:!x.active}:x)})}
      onEdit={e=>openModal('edit',e)} onDelete={e=>openModal('delete',e)} onInvite={e=>openModal('invite',e)} onPreview={e=>openModal('book',e)} onPoll={(p:Poll)=>openModal('poll',p)}/>}

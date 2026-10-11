@@ -12,5 +12,5 @@ export function Sidebar({view,onView,upcomingCount,user,onLogin}:{view:View;onVi
 }
 
 export function AppHeader({view,setup,user,onLogin}:{view:View;setup:boolean;user:HostUser;onLogin:()=>void}){
- return <header><span>워크스페이스 <ChevronRight size={13}/><b>{view}</b></span><div><span className="pill">{setup?'연결 설정 필요':user?'Supabase 연결':'미리보기'}</span>{user?<button onClick={async()=>{await fetch('/auth/logout',{method:'POST'});location.assign('/')}}>로그아웃</button>:<button onClick={onLogin}>로그인 <ArrowUpRight size={15}/></button>}</div></header>;
+ return <header><span>워크스페이스 <ChevronRight size={13}/><b>{view}</b></span><div>{setup&&<span className="pill">연결 설정 필요</span>}{user?<button onClick={async()=>{await fetch('/auth/logout',{method:'POST'});location.assign('/')}}>로그아웃</button>:<button onClick={onLogin}>로그인 <ArrowUpRight size={15}/></button>}</div></header>;
 }

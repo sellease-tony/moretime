@@ -1,0 +1,80 @@
+/* Shared polish for the host app, then the phone layout (≤720px). Loaded last so it wins over older rules. */
+.sync-status{display:flex;align-items:center;gap:7px;font-size:12px!important;color:var(--text-secondary);margin:10px 0 0!important}
+.sync-status i{width:7px;height:7px;border-radius:50%;background:#3fae7a;box-shadow:0 0 0 3px #3fae7a22}
+.sync-warning{margin:0 0 20px}
+.cardactions{display:inline-flex;align-items:center;gap:6px}
+.cardbottom .delete-page{margin:0;padding:6px;border-radius:6px;color:var(--text-secondary)}
+.cardbottom .delete-page:hover{color:#9b3232;background:#fbeeee}
+.eventcard h2{overflow-wrap:anywhere}
+
+@media(max-width:720px){
+ /* App shell: compact top bar, bottom tab bar */
+ .shell{position:relative;padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+ aside{position:sticky;top:0;z-index:5;padding:12px 16px;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;background:#fff;border-bottom:1px solid var(--border)} /* no backdrop-filter: it would anchor the fixed tab bar to this bar */
+ .brand{font-size:19px;gap:7px;padding-left:0}.brand .logo{width:30px;height:31px;border-radius:8px}.brand .logo svg{width:18px;height:18px}
+ aside nav{position:fixed;left:0;right:0;bottom:0;z-index:9;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:0;overflow:visible;background:#fff;border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -6px 24px #2926ba10}
+ aside nav button{flex-direction:column;gap:3px;padding:7px 2px;font-size:10.5px;font-weight:600;letter-spacing:-.2px;border-radius:10px;position:relative;white-space:nowrap}
+ aside nav svg{width:21px!important;height:21px}
+ aside nav button.active{background:none;color:var(--primary)}
+ aside nav button.active svg{transform:translateY(-1px)}
+ aside nav em{position:absolute;top:3px;left:calc(50% + 6px);margin:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--primary);color:#fff;font-size:10px;line-height:16px;font-style:normal}
+ header{position:fixed;top:12px;right:16px;z-index:6;height:auto;padding:0;border:0;background:none}
+ header>span{display:none}
+ header button{font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#fff}
+ /* Page heading: less marketing, more content */
+ main{padding:20px 16px 0}
+ .eyebrow{display:none}
+ .heading{gap:14px;margin-bottom:20px}
+ h1{font-size:24px;letter-spacing:-1px;margin-bottom:4px}
+ .heading p{font-size:13px}
+ .heading .primary{width:100%;justify-content:center;border-radius:12px;padding:13px}
+ .overview,.how{display:none}
+ .toolbar{gap:10px;border:0}
+ .tabs{width:100%;gap:6px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+ .tabs::-webkit-scrollbar{display:none}
+ .search{margin:0}
+ .sectionmeta{margin:16px 0 10px}
+ /* Cards */
+ .cards{gap:12px}
+ .eventcard{padding:16px 16px 0;border-radius:14px;border-top:1px solid var(--border);box-shadow:inset 0 3px 0 var(--brand-tint)}
+ .eventcard.purple{box-shadow:inset 0 3px 0 #b9b6dc}.eventcard.orange{box-shadow:inset 0 3px 0 #eabc8f}.eventcard.green{box-shadow:inset 0 3px 0 #7ebcac}
+ .cardtop{margin-bottom:12px}
+ .eventicon{width:36px;height:36px;border-radius:9px}
+ .eventcard h2{font-size:17px;margin:4px 0}
+ .eventcard p{min-height:0;margin-bottom:10px;font-size:13px}
+ .eventdetails{margin-bottom:12px}
+ .cardbottom{margin:0 -16px;padding:10px 12px}
+ .cardbottom .copy{padding:8px 11px;border-radius:8px}
+ .addcard{min-height:120px;border-radius:14px}
+ .footnote{padding-bottom:12px}
+ footer{display:none}
+ .panel{border-radius:14px}
+ /* Weekly hours: one row per weekday */
+ .hoursrow{display:grid!important;grid-template-columns:68px minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px!important;padding:10px 0}
+ .hoursrow label{width:auto!important;gap:8px}
+ .hoursrow .muted{grid-column:2/-1;font-size:13px}
+ .hoursrow input[type=time]{min-width:0;width:100%;padding:9px 4px;font-size:13px;text-align:center}
+ .hoursrow input[type=time]::-webkit-calendar-picker-indicator{display:none}
+ .panel>.primary{width:100%;justify-content:center;border-radius:12px;padding:13px}
+ /* Booked schedule: compact month grid with dots; the list below the grid carries the details */
+ .agenda-grid{gap:4px}
+ .agenda-grid>button{min-height:0!important;aspect-ratio:1;padding:0!important;align-items:center;justify-content:center;gap:3px;border-radius:12px;border-color:transparent;background:var(--surface-subtle)}
+ .agenda-grid>button[aria-current=date]{border-color:var(--brand-tint)}
+ .agenda-grid>button.selected{background:var(--primary);border-color:var(--primary);color:#fff}
+ .agenda-grid b{justify-content:center;font-size:14px}
+ .agenda-grid b small,.agenda-grid .agenda-event,.agenda-grid>button>small{display:none}
+ .agenda-grid .agenda-count{font-size:0;height:5px}
+ .agenda-grid .agenda-count:not(:empty)::after{content:'';display:block;width:5px;height:5px;border-radius:50%;background:var(--primary)}
+ .agenda-grid>button.selected .agenda-count:not(:empty)::after{background:#fff}
+ .booking-agenda{padding:16px}
+ /* Modals become bottom sheets */
+ .overlay{align-items:flex-end;padding:0}
+ .modal,.modal.wide,.modal.wide:has(>.event-editor){width:100%;max-width:none;max-height:92dvh;border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom);animation:moa-sheet .22s ease-out}
+ .modal:not(.wide){padding:28px 20px calc(24px + env(safe-area-inset-bottom))}
+ .modal::before{content:'';display:block;width:38px;height:4px;border-radius:2px;background:var(--border);margin:-14px auto 10px}
+ .modal.wide::before{margin:10px auto 0}
+ .close{top:12px;right:12px}
+ .toast{bottom:calc(84px + env(safe-area-inset-bottom));width:calc(100vw - 32px);justify-content:center;border-radius:12px}
+}
+@keyframes moa-sheet{from{transform:translateY(24px);opacity:.6}}
+@media(prefers-reduced-motion:reduce){.modal{animation:none!important}}
