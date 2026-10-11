@@ -1,0 +1,15 @@
+.page{min-height:100vh;background:var(--background);padding:48px 20px 72px}
+.doc{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:14px;padding:40px 44px}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);margin:0 auto 20px;max-width:760px;width:100%}
+.doc h1{font-size:28px;letter-spacing:-1px;margin-bottom:8px}
+.doc h2{font-size:17px;margin:32px 0 10px}
+.doc p,.doc li{font-size:14px;line-height:1.85;color:var(--text-secondary)}
+.doc ul{padding-left:20px;margin:0}
+.doc table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+.doc th,.doc td{border:1px solid var(--border);padding:9px 10px;text-align:left;vertical-align:top;color:var(--text-secondary)}
+.doc th{background:var(--surface-subtle);color:var(--foreground);font-weight:600}
+.meta{font-size:13px;color:var(--text-secondary)}
+.draft{background:#fff7e6;border:1px solid #f3d9a4;color:#8a5a00;border-radius:8px;padding:12px 14px;font-size:13px;margin:16px 0 0}
+.todo{background:#fff2c2;color:#7a4b00;padding:0 4px;border-radius:3px;font-weight:600}
+.tableWrap{overflow-x:auto}
+@media(max-width:640px){.page{padding:24px 16px 56px}.doc{padding:26px 20px}.doc h1{font-size:23px}}
