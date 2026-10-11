@@ -17,7 +17,9 @@ export async function GET(){
   const user=await currentUser();
   if(!user)return json({...defaultWorkspace,bookings:[],revision:0,setupRequired:false,user:null,notifications:{mode:'off'}});
   try{
-    await syncOwnerAvailability(user.id);
+    // Never make the page wait on Google: cron and calendar webhooks keep availability current, and a
+    // stale workspace (>60s) is refreshed after the response so the next poll picks it up.
+    after(async()=>{try{await syncOwnerAvailability(user.id)}catch{}});
     const db=adminClient();
     const [{data:row,error},{data:bookings,error:bookingError}]=await Promise.all([
       db.from('moa_workspaces').select('data,revision').eq('owner_id',user.id).maybeSingle(),

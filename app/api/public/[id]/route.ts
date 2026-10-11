@@ -25,9 +25,8 @@ export async function GET(request:Request,context:Context){
     const month=new URL(request.url).searchParams.get('month')||kstDay().slice(0,7);
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return json({error:'월을 확인해 주세요.'},400);
     const days=monthSlots(event.availability,month,event.duration,owner.busy);
-    const user=await googleUser();
     // Only the host's display name is shown to guests, never their email.
-    const {data:hostUser}=await adminClient().auth.admin.getUserById(target.owner_id);
+    const [user,{data:hostUser}]=await Promise.all([googleUser(),adminClient().auth.admin.getUserById(target.owner_id)]);
     const hostName=String(hostUser?.user?.user_metadata?.full_name||hostUser?.user?.user_metadata?.name||'').slice(0,80)||null;
     const today=kstDay(),nextDay=Object.values(days).some(s=>s.length)?null:nextAvailableDay(event.availability,today,addDays(today,90),event.duration,owner.busy);
     return json({event:{title:event.title,desc:event.desc,duration:event.duration,meetingMode:event.availability?.meetingMode||'online',hostName,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},nextDay,slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
