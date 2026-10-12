@@ -20,7 +20,7 @@ select vault.create_secret('<CRON_SECRET 값>', 'moretime_calendar_cron');
 
 ## 등록
 
-`<서비스도메인>`을 운영 `APP_URL`의 호스트로 바꿉니다(현재 `moretime-pearl.vercel.app`).
+`<서비스도메인>`을 운영 `APP_URL`의 호스트로 바꿉니다(현재 `moretime.sellease.io`, 2026-10-12 전환).
 
 ```sql
 select cron.schedule('moretime-calendar-background', '* * * * *', $job$
