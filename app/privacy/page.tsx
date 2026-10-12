@@ -49,7 +49,7 @@ export default function Privacy(){
   <p>서비스는 로그인 상태 유지를 위해 세션 쿠키를 사용하며, 투표 응답 수정을 위해 브라우저 저장소에 응답 정보를 보관할 수 있습니다. 브라우저 설정에서 쿠키를 거부할 수 있으나 로그인이 필요한 기능을 이용할 수 없습니다.</p>
 
   <h2>11. 개인정보 보호책임자</h2>
-  <ul><li>책임자: <V k="privacyOfficer"/></li><li>연락처: <V k="contactEmail"/></li></ul>
+  <ul><li>책임자: <V k="privacyOfficer"/></li><li>전화: <V k="phone"/></li><li>서비스 문의: <V k="contactEmail"/></li></ul>
   <p>개인정보 침해에 관한 신고나 상담은 개인정보침해신고센터(privacy.kisa.or.kr, 국번 없이 118) 등에 문의할 수 있습니다.</p>
 
   <h2>12. 처리방침의 변경</h2>

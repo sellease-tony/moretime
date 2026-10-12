@@ -4,15 +4,16 @@
 export const TODO='확인 필요';
 export const legal={
  service:'모아타임 (moretime.sellease.io)',
+ // From Sellease's own quotation (supplier block) and its personal-data internal management plan.
  operator:'(주)셀리즈',
- representative:TODO,
- businessNumber:TODO,
+ representative:'유민재',
+ businessNumber:'381-86-03180',
  // 통신판매업 신고번호 — required once paid plans are sold online.
  mailOrderNumber:TODO,
- address:TODO,
- phone:TODO,
- contactEmail:TODO,
- privacyOfficer:TODO,
+ address:'서울시 관악구 낙성대로 2, 낙성벤처창업센터 2층',
+ phone:'070-8080-5994',
+ contactEmail:'help@sellease.io',
+ privacyOfficer:'대표이사 유민재 (manager@sellease.us)',
  hosting:'Vercel Inc.',
  effectiveDate:TODO,
  // How long booking records are kept after the meeting ends.
