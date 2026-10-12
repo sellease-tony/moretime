@@ -9,15 +9,16 @@ export const legal={
  representative:'유민재',
  businessNumber:'381-86-03180',
  // 통신판매업 신고번호 — required once paid plans are sold online.
- mailOrderNumber:TODO,
+ mailOrderNumber:'2024-서울마포-2126',
  address:'서울시 관악구 낙성대로 2, 낙성벤처창업센터 2층',
  phone:'070-8080-5994',
  contactEmail:'help@sellease.io',
  privacyOfficer:'대표이사 유민재 (manager@sellease.us)',
  hosting:'Vercel Inc.',
- effectiveDate:TODO,
+ // Deployment date of this version of the privacy policy and terms.
+ effectiveDate:'2026년 10월 12일',
  // How long booking records are kept after the meeting ends.
- bookingRetention:TODO,
+ bookingRetention:'1년(내부 지침에 따름)',
 };
 export const legalComplete=()=>Object.values(legal).every(v=>v!==TODO);
 // Business identity rows for the site footer, in the order Korean storefronts usually show them.
