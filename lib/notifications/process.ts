@@ -9,12 +9,13 @@ export async function processClaimed(db:SupabaseClient,jobs:NoticeJob[],send:typ
   return Promise.all(jobs.map(job=>processJob(db,job,send)));
 }
 async function processJob(db:SupabaseClient,job:NoticeJob,send:typeof deliver):Promise<Outcome>{
-  let skip:boolean;
+  let skip:boolean,meetUrl:string|undefined;
   try{
     // A cancellation may supersede a claimed confirmation before a provider call begins.
-    const {data:booking,error:readError}=await db.from('moa_bookings').select('status,starts_at').eq('id',job.booking_id).single();
+    const {data:booking,error:readError}=await db.from('moa_bookings').select('status,starts_at,meet_url').eq('id',job.booking_id).single();
     if(readError)throw new Error('예약 상태를 확인하지 못했습니다.');
     skip=job.event_type==='confirmed'&&booking?.status==='cancelled';
+    meetUrl=booking?.meet_url||undefined;
     if(isReminder(job.event_type)){
       const {data:settings,error:settingsError}=await db.from('moa_reminder_settings').select('reminder_24h,reminder_1h,guest,host').eq('owner_id',job.owner_id).maybeSingle();
       if(settingsError)throw Error('리마인더 설정을 확인하지 못했습니다.');
@@ -26,7 +27,7 @@ async function processJob(db:SupabaseClient,job:NoticeJob,send:typeof deliver):P
     await db.from('moa_notification_jobs').update({status:'pending',last_error:error,available_at:new Date(Date.now()+60_000).toISOString(),lease_until:null,lease_token:null,updated_at:new Date().toISOString()}).eq('id',job.id).eq('lease_token',job.lease_token).eq('status','processing');
     return {id:job.id,status:'released',error};
   }
-  const outcome=skip?{status:'superseded' as const}:!OFFERED_CHANNELS.includes(job.channel)?{status:'blocked' as const,error:'문자·카카오 알림톡은 아직 제공하지 않습니다.'}:await send(job);
+  const outcome=skip?{status:'superseded' as const}:!OFFERED_CHANNELS.includes(job.channel)?{status:'blocked' as const,error:'문자·카카오 알림톡은 아직 제공하지 않습니다.'}:await send(meetUrl&&job.event_type!=='cancelled'?{...job,payload:{...job.payload,meetUrl}}:job);
   const retry=outcome.status==='retry'&&job.attempts<3&&Date.now()+5*60_000<new Date(job.expires_at).getTime();
   const status=outcome.status==='retry'?(retry?'pending':'failed'):outcome.status;
   const {error:updateError}=await db.from('moa_notification_jobs').update({status,provider_id:'providerId' in outcome?outcome.providerId:null,last_error:'error' in outcome?outcome.error:null,available_at:new Date(Date.now()+job.attempts*60_000).toISOString(),lease_until:null,lease_token:null,updated_at:new Date().toISOString()}).eq('id',job.id).eq('lease_token',job.lease_token).eq('status','processing');

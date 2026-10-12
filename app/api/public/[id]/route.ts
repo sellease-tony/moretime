@@ -65,7 +65,8 @@ export async function POST(request:Request,context:Context){
     if(limitError)throw Error('예약 제한을 확인하지 못했습니다.');if((count||0)>=20)return json({error:'하루 예약 가능 횟수를 초과했습니다.'},429);
     const {error}=await db.rpc('moa_save_workspace',{p_owner:target.owner_id,p_revision:data.revision,p_state:data.state,p_bookings:[...data.bookings,booking],p_mode:notificationMode()});
     if(error)return json({error:'예약 가능한 시간이 변경되었습니다. 새로고침 후 다시 선택해 주세요.'},409);
-    after(async()=>{await Promise.allSettled([syncBooking(target.owner_id,booking.id),processNotifications(target.owner_id)])});
+    // Calendar first: it creates the Meet link that the confirmation email includes.
+    after(async()=>{await syncBooking(target.owner_id,booking.id);await processNotifications(target.owner_id).catch(()=>{})});
     return json({ok:true,id:booking.id,manageUrl:managementUrl(booking.id),meetingTitle:booking.meetingTitle,mode:notificationMode(),calendar:{pending:true}});
   }catch(e){return json({error:e instanceof Error?e.message:'예약하지 못했습니다.'},503)}
 }

@@ -31,6 +31,7 @@ export async function POST(request:Request,ctx:Context){
  }
  const {data:newId,error}=await db.rpc('moa_host_reschedule',{p_owner:user.id,p_booking:id,p_new_id:body.requestId,p_day:body.day,p_time:body.time,p_mode:notificationMode()});
  if(error)return json({error:rescheduleError(error.message)},409);
- after(async()=>{await Promise.allSettled([processNotifications(user.id),(async()=>{await syncBooking(user.id,id);await syncBooking(user.id,newId)})()])});
+ // Calendar first so the change email carries the new booking's Meet link.
+ after(async()=>{await syncBooking(user.id,id);await syncBooking(user.id,newId);await processNotifications(user.id).catch(()=>{})});
  return json({ok:true,id:newId,mode:notificationMode()});
 }

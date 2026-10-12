@@ -25,12 +25,12 @@ export async function PATCH(request:Request,ctx:Context){if(!sameOrigin(request)
    const {data:now}=await db.from('moa_polls').select('revision').eq('id',id).maybeSingle();if(now?.revision!==p.revision)break;
   }
   if(ce)return json({error:ce.message.includes('overlapping_booking')?'그 사이 같은 시간에 다른 예약이 생겼습니다. 다른 후보를 선택해 주세요.':ce.message.includes('not_unanimous')?'예상 인원 전원이 응답했고 모두 가능한 시간만 확정할 수 있습니다.':'응답이나 일정이 변경되었습니다. 새로고침 후 다시 확인해 주세요.'},409);
-  after(async()=>{await Promise.allSettled([syncBooking(user.id,bid!),processNotifications(user.id)])});return json({ok:true});
+  after(async()=>{await syncBooking(user.id,bid!);await processNotifications(user.id).catch(()=>{})});return json({ok:true});
  }
  if(body.action==='cancel'){
   if(p.status==='confirmed'){
    const {error:ce}=await db.rpc('moa_manage_booking',{p_booking:p.booking_id,p_action:'cancel',p_new_id:null,p_day:null,p_time:null,p_mode:notificationMode()});if(ce)throw Error('이미 시작된 모임은 취소할 수 없습니다.');
-   after(async()=>{await Promise.allSettled([syncBooking(user.id,p.booking_id),processNotifications(user.id)])});
+   after(async()=>{await syncBooking(user.id,p.booking_id);await processNotifications(user.id).catch(()=>{})});
   }else {const {data:changed,error:ce}=await db.from('moa_polls').update({status:'cancelled',revision:p.revision+1}).eq('id',id).eq('owner_id',user.id).eq('revision',p.revision).select('id');if(ce||!changed?.length)throw Error('투표가 변경됐습니다. 새로고침 후 다시 시도해 주세요.');}
   return json({ok:true});
  }

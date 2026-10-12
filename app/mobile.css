@@ -85,3 +85,4 @@
 .business-info{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;font-size:11.5px;color:var(--text-secondary);line-height:1.7}
 .business-info>div{display:flex;gap:6px}.business-info dt{font-weight:600;color:var(--foreground)}.business-info dd{margin:0}
 .business-todo{background:#fff2c2;color:#7a4b00;padding:0 4px;border-radius:3px;font-weight:600}
+.meet-link{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:10px;background:var(--primary);color:#fff;font-weight:600;font-size:14px}
