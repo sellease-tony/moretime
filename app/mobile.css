@@ -78,3 +78,6 @@
 }
 @keyframes moa-sheet{from{transform:translateY(24px);opacity:.6}}
 @media(prefers-reduced-motion:reduce){.modal{animation:none!important}}
+.reschedule h2{margin:6px 0 14px}.reschedule-current{background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px;padding:14px 16px}.reschedule-current strong{display:block;margin-bottom:4px}.reschedule-current p{margin:0;font-size:13px}
+.reschedule-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 8px}.reschedule-fields label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-secondary)}
+.reschedule-help{font-size:12px!important;margin:0}.reschedule-warning{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:#fff7e6;color:#8a5a00}.reschedule-warning p{margin:0}

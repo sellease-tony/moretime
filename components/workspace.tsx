@@ -12,7 +12,8 @@ import PagesView,{type KindFilter} from '@/components/host/pages-view';
 import {HoursView,SettingsView} from '@/components/host/simple-views';
 import BookPreview from '@/components/host/book-preview';
 import {InviteLinkModal,DeletePageModal,LoginModal,BookedModal} from '@/components/host/small-modals';
-type Modal=''|'create'|'edit'|'book'|'poll'|'invite'|'delete'|'login'|'success';
+import RescheduleModal from '@/components/host/reschedule-modal';
+type Modal=''|'create'|'edit'|'book'|'poll'|'invite'|'delete'|'login'|'success'|'reschedule';
 type SaveEvent=Parameters<React.ComponentProps<typeof EventEditor>['onSave']>[0];
 
 export default function Home(){
@@ -62,7 +63,7 @@ export default function Home(){
      onToggleActive={e=>save({events:events.map(x=>x.id===e.id?{...x,active:!x.active}:x)})}
      onEdit={e=>openModal('edit',e)} onDelete={e=>openModal('delete',e)} onInvite={e=>openModal('invite',e)} onPreview={e=>openModal('book',e)} onPoll={(p:Poll)=>openModal('poll',p)}/>}
     {view==='가능 시간'&&<HoursView ws={ws} onSave={()=>save({hours:ws.hours,range:ws.range})}/>}
-    {view==='예약된 일정'&&<BookingsCalendar bookings={bookings} now={now} busy={busy} onCancel={id=>save({bookings:bookings.filter(b=>b.id!==id)})}/>}
+    {view==='예약된 일정'&&<BookingsCalendar bookings={bookings} now={now} busy={busy} onCancel={id=>save({bookings:bookings.filter(b=>b.id!==id)})} onReschedule={b=>openModal('reschedule',b)}/>}
     {view==='설정 및 연동'&&<SettingsView user={user}/>}
    </main>
    <footer><span>© 2026 모아타임</span><span>시간을 모아, 더 좋은 만남으로.</span><span><Globe size={13}/>한국어 · KST</span></footer>
@@ -76,6 +77,7 @@ export default function Home(){
    {modal==='delete'&&<DeletePageModal event={item} bookingCount={bookings.filter(b=>b.eventId===item.id).length} busy={busy} onCancel={close} onDelete={async()=>{if(await save({deleteEventId:item.id})){close();ws.notify('예약 페이지를 삭제했습니다.')}}}/>}
    {modal==='login'&&<LoginModal setup={setup}/>}
    {modal==='book'&&<BookPreview key={item.id} event={item} mode={mode} busy={busy} onBook={async b=>{if(await save({bookings:[...bookings,{id:crypto.randomUUID(),eventId:item.id,title:item.title,duration:item.duration,...b,channels:['email'],notificationConsent:true}]})){setBooked({day:b.day,time:b.time});setModal('success')}}}/>}
+   {modal==='reschedule'&&<RescheduleModal key={item.id} booking={item} busy={busy} onBusy={ws.setBusy} onDone={message=>{close();ws.notify(message)}}/>}
    {modal==='success'&&<BookedModal title={item.title} day={booked.day} time={booked.time} mode={mode} onDone={()=>{close();setView('예약된 일정')}}/>}
   </section></div>}
   {ws.toast&&<div className="toast" role="status"><Check size={17}/>{ws.toast}</div>}
