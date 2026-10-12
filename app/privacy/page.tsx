@@ -54,6 +54,5 @@ export default function Privacy(){
 
   <h2>12. 처리방침의 변경</h2>
   <p>이 처리방침은 <V k="effectiveDate"/>부터 적용되며, 내용이 바뀌는 경우 서비스 화면을 통해 알립니다.</p>
-  <p className={s.meta}>운영사: <V k="operator"/> · 대표 <V k="representative"/> · 사업자등록번호 <V k="businessNumber"/> · <V k="address"/></p>
  </LegalDoc>;
 }

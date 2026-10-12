@@ -81,3 +81,7 @@
 .reschedule h2{margin:6px 0 14px}.reschedule-current{background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px;padding:14px 16px}.reschedule-current strong{display:block;margin-bottom:4px}.reschedule-current p{margin:0;font-size:13px}
 .reschedule-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 8px}.reschedule-fields label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-secondary)}
 .reschedule-help{font-size:12px!important;margin:0}.reschedule-warning{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:#fff7e6;color:#8a5a00}.reschedule-warning p{margin:0}
+/* Seller identity (landing footer, legal pages) */
+.business-info{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;font-size:11.5px;color:var(--text-secondary);line-height:1.7}
+.business-info>div{display:flex;gap:6px}.business-info dt{font-weight:600;color:var(--foreground)}.business-info dd{margin:0}
+.business-todo{background:#fff2c2;color:#7a4b00;padding:0 4px;border-radius:3px;font-weight:600}

@@ -19,3 +19,4 @@
 
 .brand{color:var(--brand-ink)}.finalCta .eyebrow{color:#d8d6ff}
 .loginLegal{font-size:12px;color:var(--text-secondary);margin:18px 0 0;line-height:1.7}.loginLegal a{text-decoration:underline}
+.businessWrap{max-width:1180px;margin:0 auto;padding:18px 30px 36px;border-top:1px solid var(--border)}@media(max-width:720px){.businessWrap{padding:16px 20px 32px}}

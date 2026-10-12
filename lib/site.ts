@@ -1,5 +1,5 @@
 // Canonical public origin. APP_URL is set per deployment; the fallback is the production domain.
-export const siteUrl=(process.env.APP_URL||'https://moretime.co.kr').replace(/\/+$/,'');
+export const siteUrl=(process.env.APP_URL||'https://moretime.sellease.io').replace(/\/+$/,'');
 // Hosts that served the app before the custom domain. Page visits there move to siteUrl;
 // API routes stay reachable so cron jobs, webhooks and already-open tabs keep working.
 export const legacyHosts=['moretime-pearl.vercel.app'];

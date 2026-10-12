@@ -13,3 +13,4 @@
 .todo{background:#fff2c2;color:#7a4b00;padding:0 4px;border-radius:3px;font-weight:600}
 .tableWrap{overflow-x:auto}
 @media(max-width:640px){.page{padding:24px 16px 56px}.doc{padding:26px 20px}.doc h1{font-size:23px}}
+.business{display:grid;grid-template-columns:1fr;gap:2px;font-size:13px}
