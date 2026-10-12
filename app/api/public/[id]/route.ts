@@ -1,7 +1,7 @@
 import {meetingFields} from '@/lib/bookings/meeting';
 import {managementUrl} from '@/lib/bookings/manage-token';
 import {guestContactSchema} from '@/lib/bookings/guest';
-import {monthSlots,savedSlots,kstDay,addDays,nextAvailableDay} from '@/lib/availability';
+import {monthSlots,bookableSlots,dayCounts,kstDay,addDays,nextAvailableDay} from '@/lib/availability';
 import {syncBooking} from '@/lib/calendar/sync';
 import {after} from 'next/server';
 import {googleUser,adminClient,supabaseConfigured} from '@/lib/supabase/server';
@@ -20,15 +20,15 @@ export async function GET(request:Request,context:Context){
   try{
     const target=await link((await context.params).id);if(!target)return json({error:'예약 페이지를 찾을 수 없습니다.'},404);
     const owner=await loadOwner(target.owner_id),event=owner.state.events.find(e=>e.id===target.event_id&&e.active);if(!event)return json({error:'현재 예약을 받고 있지 않습니다.'},404);
-    const day=new URL(request.url).searchParams.get('day');let slots:string[]=[];
-    if(day){if(!validDay(day))return json({error:'오늘부터 90일 이내의 날짜를 선택해 주세요.'},400);slots=savedSlots(event.availability,day,event.duration,owner.busy)}
+    const day=new URL(request.url).searchParams.get('day');let slots:string[]=[];const taken=dayCounts(owner.bookings,event.id);
+    if(day){if(!validDay(day))return json({error:'오늘부터 90일 이내의 날짜를 선택해 주세요.'},400);slots=bookableSlots(event.availability,day,event.duration,owner.busy,taken)}
     const month=new URL(request.url).searchParams.get('month')||kstDay().slice(0,7);
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return json({error:'월을 확인해 주세요.'},400);
-    const days=monthSlots(event.availability,month,event.duration,owner.busy);
+    const days=monthSlots(event.availability,month,event.duration,owner.busy,new Date(),taken);
     // Only the host's display name is shown to guests, never their email.
     const [user,{data:hostUser}]=await Promise.all([googleUser(),adminClient().auth.admin.getUserById(target.owner_id)]);
     const hostName=String(hostUser?.user?.user_metadata?.full_name||hostUser?.user?.user_metadata?.name||'').slice(0,80)||null;
-    const today=kstDay(),nextDay=Object.values(days).some(s=>s.length)?null:nextAvailableDay(event.availability,today,addDays(today,90),event.duration,owner.busy);
+    const today=kstDay(),nextDay=Object.values(days).some(s=>s.length)?null:nextAvailableDay(event.availability,today,addDays(today,90),event.duration,owner.busy,new Date(),taken);
     return json({event:{title:event.title,desc:event.desc,duration:event.duration,meetingMode:event.availability?.meetingMode||'online',hostName,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},nextDay,slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
   }catch(e){return json({error:e instanceof Error?e.message:'예약 페이지를 불러오지 못했습니다.'},503)}
 }
@@ -64,7 +64,7 @@ export async function POST(request:Request,context:Context){
     const {count,error:limitError}=await db.from('moa_bookings').select('id',{head:true,count:'exact'}).eq('payload->>email',email).gte('created_at',new Date(Date.now()-86400000).toISOString());
     if(limitError)throw Error('예약 제한을 확인하지 못했습니다.');if((count||0)>=20)return json({error:'하루 예약 가능 횟수를 초과했습니다.'},429);
     const {error}=await db.rpc('moa_save_workspace',{p_owner:target.owner_id,p_revision:data.revision,p_state:data.state,p_bookings:[...data.bookings,booking],p_mode:notificationMode()});
-    if(error)return json({error:'예약 가능한 시간이 변경되었습니다. 새로고침 후 다시 선택해 주세요.'},409);
+    if(error)return json({error:error.message.includes('daily_limit')?'이 날짜는 예약이 모두 찼습니다. 다른 날짜를 선택해 주세요.':error.message.includes('min_notice')?'이 시간은 예약 마감되었습니다. 더 늦은 시간을 선택해 주세요.':'예약 가능한 시간이 변경되었습니다. 새로고침 후 다시 선택해 주세요.'},409);
     // Calendar first: it creates the Meet link that the confirmation email includes.
     after(async()=>{await syncBooking(target.owner_id,booking.id);await processNotifications(target.owner_id).catch(()=>{})});
     return json({ok:true,id:booking.id,manageUrl:managementUrl(booking.id),meetingTitle:booking.meetingTitle,mode:notificationMode(),calendar:{pending:true}});

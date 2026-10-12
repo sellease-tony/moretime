@@ -2,7 +2,7 @@ import {after} from 'next/server';
 import {adminClient} from '@/lib/supabase/server';
 import {managementBooking,managementToken} from '@/lib/bookings/manage-token';
 import {loadOwner,validDay} from '@/lib/bookings/server';
-import {monthSlots} from '@/lib/availability';
+import {monthSlots,dayCounts} from '@/lib/availability';
 import {syncBooking} from '@/lib/calendar/sync';
 import {notificationMode} from '@/lib/notifications/providers';
 import {processNotifications} from '@/lib/notifications/worker';
@@ -30,7 +30,7 @@ export async function GET(request:Request){
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return json({error:'월을 확인해 주세요.'},400);
   const canManage=booking.status==='confirmed'&&Date.parse(booking.starts_at)>Date.now();
   const owner=await loadOwner(booking.owner_id),event=owner.state.events.find(e=>e.id===booking.payload.eventId&&e.active);
-  return json({booking:{title:booking.payload.meetingTitle||booking.payload.title,name:booking.payload.name,day:booking.payload.day,time:booking.payload.time,duration:booking.payload.duration,status:booking.status,meetUrl:booking.status==='confirmed'?booking.meet_url||null:null},canManage,canReschedule:canManage&&!!event?.availability,days:canManage&&event?monthSlots(event.availability,month,event.duration,owner.busy):{},token:managementToken(booking.id)});
+  return json({booking:{title:booking.payload.meetingTitle||booking.payload.title,name:booking.payload.name,day:booking.payload.day,time:booking.payload.time,duration:booking.payload.duration,status:booking.status,meetUrl:booking.status==='confirmed'?booking.meet_url||null:null},canManage,canReschedule:canManage&&!!event?.availability,days:canManage&&event?monthSlots(event.availability,month,event.duration,owner.busy,new Date(),dayCounts(owner.bookings.filter(b=>b.id!==booking.id),event.id)):{},token:managementToken(booking.id)});
  }catch{return json({error:'예약 정보를 불러오지 못했습니다. 다시 시도해 주세요.'},503)}
 }
 export async function POST(request:Request){
@@ -43,7 +43,7 @@ export async function POST(request:Request){
   if(body.action==='reschedule'&&(!validDay(body.day||'')||!/^([01]\d|2[0-3]):[0-5]\d$/.test(body.time||'')||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId||'')))return json({error:'변경할 날짜와 시간을 선택해 주세요.'},400);
   const db=adminClient();
   const {data:id,error}=await db.rpc('moa_manage_booking',{p_booking:booking.id,p_action:body.action,p_new_id:body.action==='reschedule'?body.requestId:null,p_day:body.day||null,p_time:body.time||null,p_mode:notificationMode()});
-  if(error){const messages:Record<string,string>={booking_started:'이미 시작된 예약은 변경·취소할 수 없습니다.',booking_changed:'예약이 이미 변경되었습니다. 최신 예약을 다시 확인해 주세요.',booking_cancelled:'이미 취소된 예약입니다.',same_time:'현재 예약과 다른 시간을 선택해 주세요.',invalid_event:'주최자가 이 페이지의 예약을 중지했습니다. 취소는 가능합니다.',invalid_time:'해당 시간은 예약할 수 없습니다. 다른 시간을 선택해 주세요.',overlapping_booking:'다른 사람이 먼저 예약했습니다. 기존 예약은 유지됩니다.'};const key=Object.keys(messages).find(k=>error.message.includes(k));return json({error:key?messages[key]:'예약이 변경됐거나 처리하지 못했습니다. 다시 확인해 주세요.'},409)}
+  if(error){const messages:Record<string,string>={daily_limit:'그 날짜는 예약이 모두 찼습니다. 다른 날짜를 선택해 주세요.',min_notice:'그 시간은 예약 마감되었습니다. 더 늦은 시간을 선택해 주세요.',booking_started:'이미 시작된 예약은 변경·취소할 수 없습니다.',booking_changed:'예약이 이미 변경되었습니다. 최신 예약을 다시 확인해 주세요.',booking_cancelled:'이미 취소된 예약입니다.',same_time:'현재 예약과 다른 시간을 선택해 주세요.',invalid_event:'주최자가 이 페이지의 예약을 중지했습니다. 취소는 가능합니다.',invalid_time:'해당 시간은 예약할 수 없습니다. 다른 시간을 선택해 주세요.',overlapping_booking:'다른 사람이 먼저 예약했습니다. 기존 예약은 유지됩니다.'};const key=Object.keys(messages).find(k=>error.message.includes(k));return json({error:key?messages[key]:'예약이 변경됐거나 처리하지 못했습니다. 다시 확인해 주세요.'},409)}
   after(async()=>{
    await syncBooking(booking.owner_id,booking.id);if(id!==booking.id)await syncBooking(booking.owner_id,id);
    await processNotifications(booking.owner_id).catch(()=>{});

@@ -1,15 +1,30 @@
 import {overlaps,type Busy} from './calendar/google';
-export type Availability={days:Record<string,string[]>;source:'manual'|'google';updatedAt:string;importedAt?:string;includeWeekends?:boolean;includeLunch?:boolean;meetingMode?:'online'|'offline';excludeHolidays?:boolean};
+// minNoticeHours: guests cannot book a slot starting sooner than this. dailyLimit: at most this many confirmed
+// bookings per day on the page (0 or unset = no limit). The database enforces both again on insert.
+export type Availability={days:Record<string,string[]>;source:'manual'|'google';updatedAt:string;importedAt?:string;includeWeekends?:boolean;includeLunch?:boolean;meetingMode?:'online'|'offline';excludeHolidays?:boolean;minNoticeHours?:number;dailyLimit?:number};
+// Confirmed bookings per day for one page, used for the daily limit.
+export type DayCounts=Record<string,number>;
 export function kstDay(now=new Date()){return new Date(now.getTime()+9*3600000).toISOString().slice(0,10)}
 export function addDays(day:string,n:number){return new Date(Date.parse(day+'T00:00:00Z')+n*86400000).toISOString().slice(0,10)}
+// The host's saved slots minus busy times. Calendar sync stores this result, so it must not apply guest rules.
 export function savedSlots(availability:Availability|undefined,day:string,duration:number,busy:Busy[],now=new Date()){
   return [...new Set(availability?.days[day]||[])].filter(time=>{
     const start=new Date(`${day}T${time}:00+09:00`),end=new Date(start.getTime()+duration*60000);
     return (Number(time.slice(0,2))*60+Number(time.slice(3)))%duration===0&&permitsTime(availability,day,time,duration)&&start>now&&!overlaps(start.toISOString(),end.toISOString(),busy,availability?.meetingMode==='offline'?60:0);
   }).sort();
 }
-export function monthSlots(availability:Availability|undefined,month:string,duration:number,busy:Busy[],now=new Date()){
-  return Object.fromEntries(Object.keys(availability?.days||{}).filter(day=>day.startsWith(month+'-')).sort().map(day=>[day,savedSlots(availability,day,duration,busy,now)]));
+// What a guest can book right now: saved slots after the minimum notice, and none once the day is full.
+export function bookableSlots(availability:Availability|undefined,day:string,duration:number,busy:Busy[],taken:DayCounts={},now=new Date()){
+  const limit=availability?.dailyLimit||0;
+  if(limit>0&&(taken[day]||0)>=limit)return [];
+  const earliest=now.getTime()+(availability?.minNoticeHours||0)*3600000;
+  return savedSlots(availability,day,duration,busy,now).filter(time=>Date.parse(`${day}T${time}:00+09:00`)>=earliest);
+}
+export function dayCounts(bookings:{eventId?:string;day:string}[],eventId:string):DayCounts{
+  const counts:DayCounts={};for(const b of bookings)if(b.eventId===eventId)counts[b.day]=(counts[b.day]||0)+1;return counts;
+}
+export function monthSlots(availability:Availability|undefined,month:string,duration:number,busy:Busy[],now=new Date(),taken:DayCounts={}){
+  return Object.fromEntries(Object.keys(availability?.days||{}).filter(day=>day.startsWith(month+'-')).sort().map(day=>[day,bookableSlots(availability,day,duration,busy,taken,now)]));
 }
 
 // Undefined options preserve existing pages; new pages explicitly choose their defaults.
@@ -20,6 +35,6 @@ export function permitsTime(options:{includeWeekends?:boolean;includeLunch?:bool
  return options?.includeLunch!==false||!(minute<13*60&&minute+duration>12*60);
 }
 // First saved day on or after `from` (and not after `until`) that still has a bookable slot.
-export function nextAvailableDay(availability:Availability|undefined,from:string,until:string,duration:number,busy:Busy[],now=new Date()){
- return Object.keys(availability?.days||{}).filter(day=>day>=from&&day<=until).sort().find(day=>savedSlots(availability,day,duration,busy,now).length)||null;
+export function nextAvailableDay(availability:Availability|undefined,from:string,until:string,duration:number,busy:Busy[],now=new Date(),taken:DayCounts={}){
+ return Object.keys(availability?.days||{}).filter(day=>day>=from&&day<=until).sort().find(day=>bookableSlots(availability,day,duration,busy,taken,now).length)||null;
 }
