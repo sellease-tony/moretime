@@ -30,6 +30,17 @@ export default function Home(){
 
  // Deep link: /app?book=<eventId> opens that page's preview once the workspace has loaded.
  useEffect(()=>{if(!ws.ready)return;const id=new URLSearchParams(location.search).get('book');if(id)openModal('book',events.find(e=>e.id===id)||seed[0])},[ws.ready]); // eslint-disable-line react-hooks/exhaustive-deps
+ // Deep link from the host's Google Calendar event: /app?booking=<bookingId> opens that booking's reschedule dialog.
+ useEffect(()=>{
+  if(!ws.ready)return;const q=new URLSearchParams(location.search),id=q.get('booking');if(!id)return;
+  q.delete('booking');history.replaceState(null,'',location.pathname+(q.size?'?'+q:''));
+  setView('예약된 일정');
+  const b=bookings.find(x=>x.id===id);
+  if(!b)ws.notify('이미 변경되었거나 취소된 예약입니다. 예약된 일정에서 최신 내용을 확인하세요.');
+  else if(b.pollId)ws.notify('여러 명 일정 투표로 확정된 일정은 투표 화면에서 관리합니다.');
+  else if(bookingStatus(b,now)!=='upcoming')ws.notify('이미 시작했거나 끝난 예약은 변경할 수 없습니다.');
+  else openModal('reschedule',b);
+ },[ws.ready]); // eslint-disable-line react-hooks/exhaustive-deps
  useEffect(()=>{if(!modal||busy)return;const onKey=(e:KeyboardEvent)=>{if(e.key==='Escape')close()};document.addEventListener('keydown',onKey);return ()=>document.removeEventListener('keydown',onKey)},[modal,busy]);
 
  function createMeeting(){setCreationKind('booking');setExpected(2);setCreateError('');setModal('create')}

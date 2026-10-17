@@ -1,7 +1,7 @@
 import {createServerClient} from '@supabase/ssr';
 import {NextResponse,type NextRequest} from 'next/server';
 import {isHost} from '@/lib/auth/role';
-import {legacyRedirect} from '@/lib/site';
+import {legacyRedirect,RETURN_COOKIE,safeReturnPath} from '@/lib/site';
 
 export async function proxy(request:NextRequest){
   // Permanent move from the old vercel.app address; the URL fragment (guest management token) is kept by the browser.
@@ -23,6 +23,9 @@ export async function proxy(request:NextRequest){
   if(target){
     const redirect=NextResponse.redirect(new URL(target,request.url));
     response.cookies.getAll().forEach(cookie=>redirect.cookies.set(cookie));
+    // Remember a booking deep link so Google login can bring the host straight back to it.
+    const back=!signedIn&&safeReturnPath(path+request.nextUrl.search);
+    if(back)redirect.cookies.set(RETURN_COOKIE,back,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:600});
     response=redirect;
   }
   response.headers.set('Cache-Control','private, no-store');

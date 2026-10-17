@@ -8,3 +8,7 @@ export function legacyRedirect(url:URL,canonical=siteUrl){
  if(!legacyHosts.includes(url.hostname)||url.hostname===target.hostname||url.pathname.startsWith('/api/'))return null;
  return new URL(url.pathname+url.search,target);
 }
+// Where a signed-out host was heading (e.g. a booking link from their calendar), kept briefly across Google login.
+export const RETURN_COOKIE='moa_return';
+const returnPath=/^\/app\?booking=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const safeReturnPath=(value:string|null|undefined)=>value&&returnPath.test(value)?value:null;
