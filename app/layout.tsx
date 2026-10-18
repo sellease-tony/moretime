@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
+  // Search Console / Naver Search Advisor ownership tags, set per deployment (takes effect on the next deploy).
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.NAVER_SITE_VERIFICATION ? { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION } : undefined,
+  },
 };
 
 export default function RootLayout({
