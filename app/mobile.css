@@ -47,7 +47,7 @@
  .cardbottom .copy{padding:8px 11px;border-radius:8px}
  .addcard{min-height:120px;border-radius:14px}
  .footnote{padding-bottom:12px}
- footer{display:none}
+ footer{flex-direction:column;align-items:center;gap:10px;padding:24px 16px 12px}footer>span:last-child{display:none} /* keep the legal links reachable above the tab bar */
  .panel{border-radius:14px}
  /* Weekly hours: one row per weekday */
  .hoursrow{display:grid!important;grid-template-columns:68px minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px!important;padding:10px 0}

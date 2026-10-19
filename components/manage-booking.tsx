@@ -1,4 +1,5 @@
 'use client';
+import LegalLinks from '@/components/legal-links';
 import {useEffect,useState} from 'react';
 import {CalendarDays} from 'lucide-react';
 import AvailabilityCalendar from './availability-calendar';
@@ -32,5 +33,5 @@ export default function ManageBooking(){
  {action==='reschedule'&&<><h2 className="booking-step-title">변경할 날짜와 시간</h2><p>새 시간이 확정되기 전까지 기존 예약은 유지됩니다.</p><div className="guest-calendar-grid"><AvailabilityCalendar month={month} onMonth={v=>{M(v);DAY('');T('')}} day={day} onDay={v=>{DAY(v);T('')}} days={data.days} loading={loading||saving}/><div className="guest-times"><h3>{day||'예약 가능한 날짜가 없습니다'}</h3><div className="slots">{(data.days[day]||[]).map(t=><button key={t} disabled={loading||saving} className={t===time?'picked':''} aria-pressed={t===time} onClick={()=>{T(t);ID(crypto.randomUUID())}}>{t}</button>)}</div></div></div>{time&&<div className="notice">{data.booking.day} {data.booking.time} → <strong>{day} {time}</strong><br/>위 시간으로 예약을 변경합니다.</div>}<button className="primary full" disabled={!time||loading||saving} onClick={submit}>{saving?'변경 중…':'이 시간으로 변경 확정'}</button></>}
  {action==='cancel'&&<div className="notice"><h3>예약을 취소하시겠어요?</h3><p>{data.booking.day} {data.booking.time} 예약이 취소되고 주최자에게 알림이 전송됩니다. 취소 후에는 다시 예약해야 합니다.</p><div className="manage-actions"><button className="authbutton" disabled={saving} onClick={()=>A(null)}>예약 유지</button><button className="primary" disabled={saving} onClick={submit}>{saving?'취소 중…':'취소 확정'}</button></div></div>}</>}
  </>}
- <p className="footnote">이 링크를 가진 사람은 예약을 관리할 수 있습니다. 다른 사람에게 공유하지 마세요.</p></section></div>;
+ <p className="footnote">이 링크를 가진 사람은 예약을 관리할 수 있습니다. 다른 사람에게 공유하지 마세요.</p></section><LegalLinks className="legal-links public-legal"/></div>;
 }

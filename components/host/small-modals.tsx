@@ -1,4 +1,5 @@
 "use client";
+import SignupConsent from '@/components/signup-consent';
 import {useState} from 'react';
 import {CalendarDays,Check} from 'lucide-react';
 import type {HostEvent} from './use-workspace';
@@ -13,7 +14,7 @@ export function DeletePageModal({event,bookingCount,busy,onCancel,onDelete}:{eve
 }
 
 export function LoginModal({setup}:{setup:boolean}){
- return <div className="auth"><span className="logo"><CalendarDays/></span><h2>반가워요, 모아타임입니다</h2><p>Google 계정으로 로그인하고 캘린더를 연결하세요.</p><a className="authbutton" href="/auth/google"><span className="google">G</span>Google로 계속하기</a><p>Google 계정 하나로 바로 시작하세요.</p><div className="notice">{setup?'Supabase 및 Google OAuth 연결값 설정이 필요합니다.':'캘린더의 바쁜 시간만 예약 가능 시간 계산에 사용합니다. 일정 제목과 내용을 예약자에게 공개하지 않습니다.'}</div></div>;
+ return <div className="auth"><span className="logo"><CalendarDays/></span><h2>반가워요, 모아타임입니다</h2><p>Google 계정으로 로그인하고 캘린더를 연결하세요.</p><SignupConsent buttonClass="authbutton" label="Google로 계속하기"/><div className="notice">{setup?'Supabase 및 Google OAuth 연결값 설정이 필요합니다.':'캘린더의 바쁜 시간만 예약 가능 시간 계산에 사용합니다. 일정 제목과 내용을 예약자에게 공개하지 않습니다.'}</div></div>;
 }
 
 export function BookedModal({title,day,time,mode,onDone}:{title:string;day:string;time:string;mode:string;onDone:()=>void}){

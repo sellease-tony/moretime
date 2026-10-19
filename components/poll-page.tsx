@@ -1,4 +1,5 @@
 'use client';
+import LegalLinks from '@/components/legal-links';
 import {useEffect,useRef,useState} from 'react';
 import AvailabilityCalendar from './availability-calendar';
 import {kstDay} from '@/lib/availability';
@@ -77,5 +78,5 @@ export default function PollPage({id}:{id:string}){
    </>}
    {saved&&credential&&<div className="notice"><p>본인 응답 수정 링크를 보관해 주세요. 이 링크에는 응답 수정 권한이 있으므로 다른 사람에게 공유하지 마세요.</p><button className="edit-availability" onClick={async()=>{try{await navigator.clipboard.writeText(location.origin+'/poll/'+id+'#response='+credential.id+'&key='+credential.key);M('본인 응답 수정 링크를 복사했습니다.')}catch{M('링크를 복사하지 못했습니다.')}}}>내 응답 수정 링크 복사</button>{poll.status==='open'&&<button className="edit-availability" disabled={busy||loading} onClick={newParticipant}>다른 참석자로 응답하기</button>}</div>}
   </>}
- </section></main>
+ </section><LegalLinks className="legal-links public-legal"/></main>
 }

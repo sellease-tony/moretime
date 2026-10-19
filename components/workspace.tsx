@@ -13,6 +13,7 @@ import {HoursView,SettingsView} from '@/components/host/simple-views';
 import BookPreview from '@/components/host/book-preview';
 import {InviteLinkModal,DeletePageModal,LoginModal,BookedModal} from '@/components/host/small-modals';
 import RescheduleModal from '@/components/host/reschedule-modal';
+import LegalLinks from '@/components/legal-links';
 type Modal=''|'create'|'edit'|'book'|'poll'|'invite'|'delete'|'login'|'success'|'reschedule';
 type SaveEvent=Parameters<React.ComponentProps<typeof EventEditor>['onSave']>[0];
 
@@ -77,7 +78,7 @@ export default function Home(){
     {view==='예약된 일정'&&<BookingsCalendar bookings={bookings} now={now} busy={busy} onCancel={id=>save({bookings:bookings.filter(b=>b.id!==id)})} onReschedule={b=>openModal('reschedule',b)}/>}
     {view==='설정 및 연동'&&<SettingsView user={user}/>}
    </main>
-   <footer><span>© 2026 모아타임</span><span>시간을 모아, 더 좋은 만남으로.</span><span><Globe size={13}/>한국어 · KST</span></footer>
+   <footer><span>© 2026 모아타임 · (주)셀리즈</span><LegalLinks/><span><Globe size={13}/>한국어 · KST</span></footer>
   </div>
   {modal&&<div className="overlay" onClick={()=>{if(!busy)close()}}><section role="dialog" aria-modal="true" aria-label="예약 및 로그인" className={'modal '+(wide?'wide':'')} onClick={e=>e.stopPropagation()}>
    <button className="close" disabled={busy} aria-label="닫기" onClick={close}><X/></button>

@@ -3,6 +3,7 @@ import {createServerClient} from '@supabase/ssr';
 import {createClient} from '@supabase/supabase-js';
 import {cookies} from 'next/headers';
 import {HOST_ROLE,isGoogle,isHost} from '@/lib/auth/role';
+import type {Consent} from '@/lib/auth/consent';
 
 export function supabaseConfigured(){return !!(process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY&&process.env.SUPABASE_SECRET_KEY)}
 export async function sessionClient(){
@@ -28,7 +29,8 @@ export async function currentUser(){
   const user=await googleUser();
   return user&&isHost(user.app_metadata)?user:null;
 }
-export async function markHost(id:string){
-  const {error}=await adminClient().auth.admin.updateUserById(id,{app_metadata:{moa_role:HOST_ROLE}});
+// Grants the host role; records sign-up consent when the host just agreed (app_metadata keys are merged, so an earlier record stays).
+export async function markHost(id:string,consent?:Consent|null){
+  const {error}=await adminClient().auth.admin.updateUserById(id,{app_metadata:{moa_role:HOST_ROLE,...(consent?{moa_consent:consent}:{})}});
   if(error)throw new Error('주최자 계정을 확인하지 못했습니다.');
 }
