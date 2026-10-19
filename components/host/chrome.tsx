@@ -4,7 +4,7 @@ import type {HostUser} from './use-workspace';
 export const VIEWS=['예약 페이지','예약된 일정','가능 시간','설정 및 연동'] as const;
 export type View=typeof VIEWS[number];
 const ICONS={'예약 페이지':Link2,'예약된 일정':CalendarDays,'가능 시간':Clock3,'설정 및 연동':Settings};
-const SUBTITLES:Record<View,string>={'예약 페이지':'링크 하나로, 서로에게 딱 맞는 시간을 만나세요.','예약된 일정':'다가오는 만남을 한눈에 확인하세요.','가능 시간':'미팅에 집중할 시간을 정해두세요.','설정 및 연동':'Google 계정과 캘린더 연결을 관리하세요.'};
+const SUBTITLES:Record<View,string>={'예약 페이지':'링크 하나로, 서로에게 딱 맞는 시간을 만나세요.','예약된 일정':'다가오는 만남을 한눈에 확인하세요.','가능 시간':'미팅에 집중할 시간을 정해두세요.','설정 및 연동':'캘린더 연결과 알림, 계정을 관리하세요.'};
 export const subtitle=(view:View)=>SUBTITLES[view];
 
 export function Sidebar({view,onView,upcomingCount,user,onLogin}:{view:View;onView:(v:View)=>void;upcomingCount:number;user:HostUser;onLogin:()=>void}){

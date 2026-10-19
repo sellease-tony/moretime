@@ -1,5 +1,5 @@
 "use client";
-import NotificationSettings from '@/components/notification-settings';
+import HostSettings from './settings';
 import type {HostUser,Workspace} from './use-workspace';
 const DAYS=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 
@@ -9,5 +9,5 @@ export function HoursView({ws,onSave}:{ws:Workspace;onSave:()=>void}){
 }
 
 export function SettingsView({user}:{user:HostUser}){
- return <><section className="panel"><h2>Google 계정 및 캘린더</h2><div className="integration"><span className="google">G</span><div><h3>{user?.email||'Google 계정 연결'}</h3><p>표시 중인 Google 캘린더의 바쁜 시간을 제외합니다.</p></div><a className="primary" href="/auth/google">{user?'다시 연결':'Google로 연결'}</a></div><div className="notice">개인·기업 모두 Google 로그인만 제공합니다. Google 가져오기는 가능 시간 설정에서 실행합니다. 예약 화면은 저장된 시간만 조회합니다.</div></section><NotificationSettings/></>;
+ return <HostSettings user={user}/>;
 }
