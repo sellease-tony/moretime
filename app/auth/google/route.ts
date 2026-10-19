@@ -1,22 +1,21 @@
 import {NextResponse} from 'next/server';
-import {googleUser,sessionClient,supabaseConfigured} from '@/lib/supabase/server';
-import {CONSENT_COOKIE,consentParam,hasConsent} from '@/lib/auth/consent';
 import {cookies} from 'next/headers';
+import {googleUser,supabaseConfigured} from '@/lib/supabase/server';
+import {consentParam,hasConsent} from '@/lib/auth/consent';
+import {FLOW_COOKIE,authorizeUrl,guestNext,newFlow} from '@/lib/auth/google-oauth';
 export const dynamic='force-dynamic';
 export async function GET(request:Request){
   const origin=process.env.APP_URL||new URL(request.url).origin;
-  if(!supabaseConfigured())return NextResponse.redirect(new URL('/login?auth_error=configuration',origin));
-  const client=await sessionClient();
-  const next=new URL(request.url).searchParams.get('next');
-  const callback=new URL('/auth/callback',origin);
-  if(next&&/^\/book\/[a-f0-9-]{36}$/.test(next))callback.searchParams.set('next',next);
-  else{
+  if(!supabaseConfigured()||!process.env.GOOGLE_CLIENT_ID||!process.env.GOOGLE_CLIENT_SECRET)return NextResponse.redirect(new URL('/login?auth_error=configuration',origin));
+  const params=new URL(request.url).searchParams;
+  const next=guestNext(params.get('next'));
+  let consent:string|undefined;
+  if(!next){
     // Host sign-up needs the terms and privacy consent from the login screen, unless this account already gave it.
-    const consent=consentParam(new URL(request.url).searchParams.get('consent'));
-    if(consent)(await cookies()).set(CONSENT_COOKIE,consent,{httpOnly:true,secure:origin.startsWith('https:'),sameSite:'lax',path:'/auth',maxAge:600});
-    else if(!hasConsent((await googleUser())?.app_metadata))return NextResponse.redirect(new URL('/login?auth_error=consent',origin));
+    consent=consentParam(params.get('consent'))||undefined;
+    if(!consent&&!hasConsent((await googleUser())?.app_metadata))return NextResponse.redirect(new URL('/login?auth_error=consent',origin));
   }
-  const {data,error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:callback.href,scopes:callback.searchParams.has('next')?'openid email profile':'https://www.googleapis.com/auth/calendar.events.freebusy https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.owned',queryParams:callback.searchParams.has('next')?{prompt:'select_account'}:{prompt:'consent',access_type:'offline'}}});
-  if(error||!data.url)return NextResponse.redirect(new URL('/login?auth_error=signin',origin));
-  return NextResponse.redirect(data.url);
+  const flow=newFlow({next,consent});
+  (await cookies()).set(FLOW_COOKIE,JSON.stringify(flow),{httpOnly:true,secure:origin.startsWith('https:'),sameSite:'lax',path:'/auth',maxAge:600});
+  return NextResponse.redirect(authorizeUrl(flow,process.env.GOOGLE_CLIENT_ID,origin));
 }

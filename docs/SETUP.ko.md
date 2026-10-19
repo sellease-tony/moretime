@@ -49,10 +49,10 @@ RLS는 사용자 자신의 데이터만 조회하도록 제한합니다. 쓰기�
 
 1. Google Cloud에서 **Google Calendar API**를 활성화합니다.
 2. OAuth 동의 화면과 웹 애플리케이션용 OAuth 클라이언트를 만듭니다.
-3. Google의 승인된 리디렉션 URI에는 Supabase Google Provider 화면의 callback URL을 등록합니다. 일반 형식은 `https://<project-ref>.supabase.co/auth/v1/callback`입니다.
-4. Supabase → Authentication → Providers → Google에 Client ID/Secret을 입력합니다. **Email·Phone·기타 공급자는 끄고 Google만 활성화**합니다.
-5. Supabase URL Configuration: Site URL은 최종 서비스 주소. Redirect URLs에는 `https://<서비스도메인>/auth/callback`과 공개 예약 복귀 쿼리용 `https://<서비스도메인>/auth/callback?next=*`를 등록합니다. 개발용 `http://localhost:3000`도 같은 형식으로 별도 등록합니다.
-6. 동일 Google OAuth Client ID/Secret을 Vercel의 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`에도 설정합니다. Calendar access token 갱신에 사용합니다.
+3. Google 로그인은 모아타임 서버가 직접 처리합니다. OAuth 클라이언트의 **승인된 리디렉션 URI**에 `https://<서비스도메인>/auth/google/callback`을 등록하고, 개발용 `http://localhost:3000/auth/google/callback`도 추가합니다. 서버가 코드를 토큰으로 바꾼 뒤 ID 토큰으로 Supabase 세션을 만들기 때문에(`signInWithIdToken`) Google 동의 화면에 supabase.co 주소가 나오지 않습니다.
+4. Supabase → Authentication → Providers → Google을 켜고 같은 Client ID를 넣습니다(ID 토큰 검증용). **Email·Phone·기타 공급자는 끄고 Google만 활성화**합니다. Supabase의 Redirect URLs 설정은 더 이상 쓰지 않습니다.
+5. OAuth 동의 화면의 승인된 도메인에는 서비스 도메인의 상위 도메인(예: `sellease.io`)만 두고, Search Console 도메인 속성으로 소유권을 확인합니다.
+6. 동일 Google OAuth Client ID/Secret을 Vercel의 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`에 설정합니다. 로그인 코드 교환과 Calendar access token 갱신에 사용합니다.
 7. 아래 명령으로 암호화 키를 생성해 `CALENDAR_TOKEN_ENCRYPTION_KEY`에 저장합니다.
 
 ```sh

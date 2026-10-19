@@ -13,8 +13,8 @@
 ## 2. 외부 서비스 설정 (APP_URL 변경 전)
 - **Supabase** → Authentication → URL Configuration
   - Site URL: `https://moretime.sellease.io`
-  - Redirect URLs에 추가: `https://moretime.sellease.io/auth/callback`, `https://moretime.sellease.io/auth/callback?next=*`
   - 전환 기간 동안 기존 `moretime-pearl.vercel.app` 항목은 지우지 않습니다.
+- **Google Cloud** → OAuth 클라이언트의 승인된 리디렉션 URI에 `https://moretime.sellease.io/auth/google/callback` 추가
 - **Google Cloud** → OAuth 동의 화면
   - 승인된 도메인에 `sellease.io`가 있는지 확인합니다(하위 주소는 따로 추가하지 않아도 됩니다).
   - 앱 홈페이지 `https://moretime.sellease.io`, 개인정보처리방침 `https://moretime.sellease.io/privacy`, 서비스 약관 `https://moretime.sellease.io/terms`
