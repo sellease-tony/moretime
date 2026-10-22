@@ -18,9 +18,9 @@
  aside nav button.active{background:none;color:var(--primary)}
  aside nav button.active svg{transform:translateY(-1px)}
  aside nav em{position:absolute;top:3px;left:calc(50% + 6px);margin:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--primary);color:#fff;font-size:10px;line-height:16px;font-style:normal}
- header{position:fixed;top:12px;right:16px;z-index:6;height:auto;padding:0;border:0;background:none}
- header>span{display:none}
- header button{font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#fff}
+ .mainwrap>header{position:fixed;top:12px;right:16px;z-index:6;height:auto;padding:0;border:0;background:none}
+ .mainwrap>header>span{display:none}
+ .mainwrap>header button{font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#fff}
  /* Page heading: less marketing, more content */
  main{padding:20px 16px 0}
  .eyebrow{display:none}
