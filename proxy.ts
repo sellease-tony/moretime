@@ -31,4 +31,4 @@ export async function proxy(request:NextRequest){
   response.headers.set('Cache-Control','private, no-store');
   return response;
 }
-export const config={matcher:['/','/app/:path*','/login','/auth/:path*','/book/:path*','/booking/:path*','/poll/:path*','/privacy','/terms','/api/workspace','/api/integrations','/api/availability/:path*','/api/calendar/sync','/api/public-links','/api/public/:path*']};
+export const config={matcher:['/','/app/:path*','/admin/:path*','/login','/auth/:path*','/book/:path*','/booking/:path*','/poll/:path*','/privacy','/terms','/api/workspace','/api/integrations','/api/availability/:path*','/api/calendar/sync','/api/public-links','/api/public/:path*']};
