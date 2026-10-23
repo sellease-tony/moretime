@@ -9,11 +9,11 @@ function Result({state}:{state:ActionState}){return state?<p className={state.ok
 export default function PlanActions({ownerId}:{ownerId:string}){
  const [g,grant,gp]=useActionState(grantPro,null),[t,trial,tp]=useActionState(extendTrial,null),[f,free,fp]=useActionState(setFree,null);
  return <div className={s.actions}>
-  <form action={grant}><b>프로 수동 부여</b><input type="hidden" name="ownerId" value={ownerId}/>
+  <form action={grant} onSubmit={e=>{if(!confirm('이 회원에게 프로 플랜을 부여할까요?'))e.preventDefault()}}><b>프로 수동 부여</b><input type="hidden" name="ownerId" value={ownerId}/>
    <label>종료일 (비우면 무기한)<input type="date" name="until"/></label>
    <label>메모<input name="note" maxLength={500} placeholder="예: 파트너 제공"/></label>
    <button className={s.btnPrimary} disabled={gp}>{gp?'저장 중…':'부여'}</button><Result state={g}/></form>
-  <form action={trial}><b>무료 체험 연장</b><input type="hidden" name="ownerId" value={ownerId}/>
+  <form action={trial} onSubmit={e=>{if(!confirm('이 회원의 무료 체험을 연장할까요?'))e.preventDefault()}}><b>무료 체험 연장</b><input type="hidden" name="ownerId" value={ownerId}/>
    <label>연장 일수<input type="number" name="days" min={1} max={90} defaultValue={14} required/></label>
    <label>메모<input name="note" maxLength={500}/></label>
    <button className={s.btn} disabled={tp}>{tp?'저장 중…':'연장'}</button><Result state={t}/></form>

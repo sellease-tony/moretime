@@ -1,3 +1,4 @@
+import {publicMessage} from '@/lib/errors';
 import {meetingFields} from '@/lib/bookings/meeting';
 import {managementUrl} from '@/lib/bookings/manage-token';
 import {guestContactSchema} from '@/lib/bookings/guest';
@@ -30,7 +31,7 @@ export async function GET(request:Request,context:Context){
     const hostName=String(hostUser?.user?.user_metadata?.full_name||hostUser?.user?.user_metadata?.name||'').slice(0,80)||null;
     const today=kstDay(),nextDay=Object.values(days).some(s=>s.length)?null:nextAvailableDay(event.availability,today,addDays(today,90),event.duration,owner.busy,new Date(),taken);
     return json({event:{title:event.title,desc:event.desc,duration:event.duration,meetingMode:event.availability?.meetingMode||'online',hostName,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},nextDay,slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
-  }catch(e){return json({error:e instanceof Error?e.message:'예약 페이지를 불러오지 못했습니다.'},503)}
+  }catch(e){return json({error:publicMessage(e,'예약 페이지를 불러오지 못했습니다.')},503)}
 }
 export async function POST(request:Request,context:Context){
   if(request.headers.get('origin')!==new URL(request.url).origin)return json({error:'허용되지 않은 요청입니다.'},403);
@@ -68,5 +69,5 @@ export async function POST(request:Request,context:Context){
     // Calendar first: it creates the Meet link that the confirmation email includes.
     after(async()=>{await syncBooking(target.owner_id,booking.id);await processNotifications(target.owner_id).catch(()=>{})});
     return json({ok:true,id:booking.id,manageUrl:managementUrl(booking.id),meetingTitle:booking.meetingTitle,mode:notificationMode(),calendar:{pending:true}});
-  }catch(e){return json({error:e instanceof Error?e.message:'예약하지 못했습니다.'},503)}
+  }catch(e){return json({error:publicMessage(e,'예약하지 못했습니다.')},503)}
 }

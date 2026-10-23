@@ -1,3 +1,4 @@
+import {allowRequest} from '@/lib/rate-limit/server';
 import {meetingFields} from '@/lib/bookings/meeting';
 import {syncOwnerAvailability,currentCalendarConstraints} from '@/lib/calendar/availability-sync';
 import {applyCalendarBusy} from '@/lib/calendar/availability-state';
@@ -56,6 +57,14 @@ export async function POST(request:Request){
     }
     if(changes.events){try{const constraints=await currentCalendarConstraints(user.id);state=applyCalendarBusy(state,constraints.busy,new Date(),true,constraints.holidays)}catch{return json({error:'Google 캘린더를 확인하지 못했습니다. 다시 연결한 후 저장해 주세요.'},503)}}
     if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
+    // Hosts add bookings one at a time from the app; cap additions and recipients so a host account cannot be used to mass-mail.
+    const added=bookings.filter(b=>!old.some(o=>o.id===b.id));
+    if(added.length>3)return json({error:'한 번에 최대 3건까지 예약을 추가할 수 있습니다.'},400);
+    if(added.length){
+      const emails=[...new Set(added.map(b=>b.email.trim().toLowerCase()))];
+      if(!await allowRequest([{scope:'host-book',value:user.id,limit:30},...emails.map(e=>({scope:'host-book-to',value:e,limit:5}))]))return json({error:'예약 추가 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'},429);
+      for(const e of emails){const {count,error:limitError}=await db.from('moa_bookings').select('id',{head:true,count:'exact'}).eq('payload->>email',e).gte('created_at',new Date(Date.now()-86400000).toISOString());if(limitError)throw Error('storage');if((count||0)>=20)return json({error:'같은 이메일로 하루에 만들 수 있는 예약 수를 넘었습니다.'},429)}
+    }
     for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
       const event=state.events.find((e:{id:string})=>e.id===b.eventId);if(event)Object.assign(b,meetingFields(event,b.company),{meetingMode:event.availability?.meetingMode||'online'});
       validateNewBooking(b,state);

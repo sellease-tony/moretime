@@ -1,3 +1,4 @@
+import {publicMessage} from '@/lib/errors';
 import {after} from 'next/server';
 import {adminClient,currentUser} from '@/lib/supabase/server';
 import {json,sameOrigin,checkCandidates} from '@/lib/polls/server';
@@ -41,4 +42,4 @@ export async function PATCH(request:Request,ctx:Context){if(!sameOrigin(request)
   const {data:updated,error:ue}=await db.from('moa_polls').update({candidates,revision:p.revision+1}).eq('id',id).eq('owner_id',user.id).eq('revision',p.revision).eq('status','open').select('id');if(ue||!updated?.length)throw Error('응답이 변경됐습니다. 새로고침해 주세요.');return json({ok:true});
  }
  return json({error:'잘못된 요청입니다.'},400);
- }catch(e){return json({error:e instanceof Error?e.message:'처리하지 못했습니다.'},400)}}
+ }catch(e){return json({error:publicMessage(e,'처리하지 못했습니다.')},400)}}
