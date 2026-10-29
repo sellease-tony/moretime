@@ -19,8 +19,9 @@ export function integrationStatus(e:Environment=process.env){return {
 export function noticeSubject(j:NoticeJob){return isReminder(j.event_type)?(j.event_type==='reminder_24h'?'예약 하루 전 알림':'예약 1시간 전 알림'):j.event_type==='confirmed'?(j.payload.previousDay?'예약 변경':'예약 확정'):'예약 취소'}
 // The host sees what the guest wrote in the booking questions; guests already know their own answers.
 const answersLine=(j:NoticeJob)=>j.recipient_role==='host'&&j.event_type==='confirmed'&&j.payload.answers?.length?'\n\n질문 응답\n'+answersText(j.payload.answers):'';
-// Online bookings carry the Google Meet link created with the host's calendar event (never on cancellations).
-const meetLine=(j:NoticeJob)=>j.payload.meetUrl&&j.event_type!=='cancelled'?`\n화상 회의(Google Meet): ${j.payload.meetUrl}`:'';
+// Online bookings carry the Google Meet or Microsoft Teams link created with the host's calendar event (never on cancellations).
+const meetingApp=(url:string)=>/^https:\/\/teams\.(microsoft|live)\.com\//.test(url)?'Microsoft Teams':'Google Meet';
+const meetLine=(j:NoticeJob)=>j.payload.meetUrl&&j.event_type!=='cancelled'?`\n화상 회의(${meetingApp(j.payload.meetUrl)}): ${j.payload.meetUrl}`:'';
 export function noticeText(j:NoticeJob){
   if(j.payload.pollId)return `[모아타임] ${noticeSubject(j)}\n일정: ${displayMeeting(j.payload)}\n일시: ${j.payload.day} ${j.payload.time} (한국시간)\n소요 시간: ${j.payload.duration}분\n일정 투표로 정한 모임입니다. 변경 사항은 주최자에게 문의해 주세요.${meetLine(j)}`;
   if(isReminder(j.event_type))return '[모아타임] '+noticeSubject(j)+'\n'+(j.recipient_role==='host'?j.payload.name+'님과의 예약을 확인해 주세요.':j.payload.name+'님, 예정된 예약을 알려드립니다.')+'\n일정: '+displayMeeting(j.payload)+'\n일시: '+j.payload.day+' '+j.payload.time+' (한국시간)\n소요 시간: '+j.payload.duration+'분'+meetLine(j);

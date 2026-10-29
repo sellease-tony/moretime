@@ -10,7 +10,7 @@ const DAY=864e5;
 type Event={id:string;title:string;active:boolean};
 export type HostRow={
  id:string;email:string;name:string;createdAt:string;lastSignInAt:string|null;consentVersion:string|null;
- calendarConnected:boolean;calendarError:string|null;pages:number;activePages:number;openPolls:number;
+ calendarConnected:boolean;calendarProvider:string|null;calendarError:string|null;pages:number;activePages:number;openPolls:number;
  bookings:number;upcomingBookings:number;bookings30d:number;lastBookingAt:string|null;
  subscription:Subscription|null;plan:'free'|'pro';
 };
@@ -35,18 +35,18 @@ async function hostRows(now=new Date()):Promise<HostRow[]>{
   db.from('moa_workspaces').select('owner_id,data').then(r=>must(r,'워크스페이스')),
   db.from('moa_bookings').select('owner_id,status,starts_at,created_at').then(r=>must(r,'예약')),
   db.from('moa_polls').select('owner_id,status').then(r=>must(r,'투표')),
-  db.from('moa_google_connections').select('owner_id').then(r=>must(r,'캘린더 연결')),
+  db.from('moa_google_connections').select('owner_id,provider').then(r=>must(r,'캘린더 연결')),
   db.from('moa_calendar_jobs').select('owner_id,last_error').then(r=>must(r,'캘린더 동기화')),
  ]);
  const by=<T extends {owner_id:string},>(rows:T[])=>{const m=new Map<string,T[]>();for(const r of rows)m.set(r.owner_id,[...(m.get(r.owner_id)||[]),r]);return m};
  const subMap=new Map((subs as Subscription[]).map(s=>[s.owner_id,s])),wsMap=new Map(workspaces.map(w=>[w.owner_id,w.data as {events?:Event[]}]));
- const bookingMap=by(bookings),pollMap=by(polls),connSet=new Set(conns.map(c=>c.owner_id)),jobMap=new Map(jobs.map(j=>[j.owner_id,j.last_error as string|null]));
+ const bookingMap=by(bookings),pollMap=by(polls),connMap=new Map(conns.map(c=>[c.owner_id,c.provider as string])),jobMap=new Map(jobs.map(j=>[j.owner_id,j.last_error as string|null]));
  return users.filter(u=>isHost(u.app_metadata)).map(u=>{
   const events=wsMap.get(u.id)?.events||[],own=(bookingMap.get(u.id)||[]).filter(b=>b.status==='confirmed'),sub=subMap.get(u.id)||null;
   const consent=(u.app_metadata as {moa_consent?:{version?:string}}).moa_consent;
   return {
    id:u.id,email:u.email||'',name:String(u.user_metadata?.full_name||u.user_metadata?.name||''),createdAt:u.created_at,lastSignInAt:u.last_sign_in_at||null,
-   consentVersion:consent?.version||null,calendarConnected:connSet.has(u.id),calendarError:jobMap.get(u.id)||null,
+   consentVersion:consent?.version||null,calendarConnected:connMap.has(u.id),calendarProvider:connMap.get(u.id)||null,calendarError:jobMap.get(u.id)||null,
    pages:events.length,activePages:events.filter(e=>e.active).length,openPolls:(pollMap.get(u.id)||[]).filter(p=>p.status==='open').length,
    bookings:own.length,upcomingBookings:own.filter(b=>new Date(b.starts_at)>now).length,bookings30d:own.filter(b=>now.getTime()-new Date(b.created_at).getTime()<30*DAY).length,
    lastBookingAt:own.map(b=>b.created_at).sort().at(-1)||null,

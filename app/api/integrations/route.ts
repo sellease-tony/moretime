@@ -9,8 +9,8 @@ export async function GET(){
   if(!user)return Response.json({error:'로그인이 필요합니다.'},{status:401});
   const {data,error}=await adminClient().from('moa_notification_jobs').select('id,booking_id,event_type,channel,recipient_role,status,attempts,last_error,provider_id,created_at').eq('owner_id',user.id).order('created_at',{ascending:false}).limit(30);
   if(error)return Response.json({error:'알림 내역을 불러오지 못했습니다.'},{status:503});
-  const {data:calendar}=await adminClient().from('moa_google_connections').select('owner_id').eq('owner_id',user.id).maybeSingle();
+  const {data:calendar}=await adminClient().from('moa_google_connections').select('owner_id,provider').eq('owner_id',user.id).maybeSingle();
   const {data:reminders,error:reminderError}=await adminClient().from('moa_reminder_settings').select('reminder_24h,reminder_1h,guest,host').eq('owner_id',user.id).maybeSingle();
   if(reminderError)return Response.json({error:'리마인더 설정을 불러오지 못했습니다.'},{status:503});
-  return Response.json({reminders:reminders||defaultReminders,...integrationStatus(),configured:true,calendar:calendarConfigured()&&!!calendar,jobs:data},{headers:{'Cache-Control':'no-store'}});
+  return Response.json({reminders:reminders||defaultReminders,...integrationStatus(),configured:true,calendar:!!calendar&&calendarConfigured((calendar.provider||'google') as 'google'|'microsoft'),calendarProvider:calendar?.provider||null,jobs:data},{headers:{'Cache-Control':'no-store'}});
 }

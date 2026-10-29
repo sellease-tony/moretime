@@ -21,6 +21,8 @@ export default function SignupConsent({buttonClass,label='Google로 시작하기
    </dl><p>동의를 거부할 수 있으나, 거부하면 서비스에 가입할 수 없습니다.</p></details>
   </fieldset>
   <a className={buttonClass} href={all?'/auth/google?consent='+CONSENT_VERSION:undefined} aria-disabled={!all} onClick={e=>{if(!all)e.preventDefault()}}><span aria-hidden="true" className="google">G</span>{label}<ArrowRight size={17}/></a>
+  <a className={buttonClass+' microsoft-button'} href={all?'/auth/microsoft?consent='+CONSENT_VERSION:undefined} aria-disabled={!all} onClick={e=>{if(!all)e.preventDefault()}}><span aria-hidden="true" className="ms-logo"><i/><i/><i/><i/></span>{label.replace('Google','Microsoft')}<ArrowRight size={17}/></a>
+  <small className="provider-hint">Google 캘린더 또는 Outlook(Microsoft 365) 캘린더 중 쓰시는 쪽으로 시작하세요.</small>
   {!all&&<small className="consent-hint">필수 항목에 동의하면 시작할 수 있습니다.</small>}
  </div>;
 }

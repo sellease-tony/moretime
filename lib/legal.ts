@@ -16,7 +16,7 @@ export const legal={
  privacyOfficer:'대표이사 유민재 (manager@sellease.us)',
  hosting:'Vercel Inc.',
  // Deployment date of this version of the privacy policy and terms.
- effectiveDate:'2026년 10월 12일',
+ effectiveDate:'2026년 10월 29일',
  // How long booking records are kept after the meeting ends.
  bookingRetention:'1년(내부 지침에 따름)',
 };

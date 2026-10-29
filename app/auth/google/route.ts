@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {cookies} from 'next/headers';
-import {googleUser,supabaseConfigured} from '@/lib/supabase/server';
+import {oauthUser,supabaseConfigured} from '@/lib/supabase/server';
 import {consentParam,hasConsent} from '@/lib/auth/consent';
 import {FLOW_COOKIE,authorizeUrl,guestNext,newFlow} from '@/lib/auth/google-oauth';
 export const dynamic='force-dynamic';
@@ -13,7 +13,7 @@ export async function GET(request:Request){
   if(!next){
     // Host sign-up needs the terms and privacy consent from the login screen, unless this account already gave it.
     consent=consentParam(params.get('consent'))||undefined;
-    if(!consent&&!hasConsent((await googleUser())?.app_metadata))return NextResponse.redirect(new URL('/login?auth_error=consent',origin));
+    if(!consent&&!hasConsent((await oauthUser())?.app_metadata))return NextResponse.redirect(new URL('/login?auth_error=consent',origin));
   }
   const flow=newFlow({next,consent});
   (await cookies()).set(FLOW_COOKIE,JSON.stringify(flow),{httpOnly:true,secure:origin.startsWith('https:'),sameSite:'lax',path:'/auth',maxAge:600});

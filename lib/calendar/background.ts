@@ -2,7 +2,7 @@ import {syncBooking} from './sync';
 import 'server-only';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {adminClient} from '@/lib/supabase/server';
-import {ownerAccessToken} from './server';
+import {ownerConnection} from './server';
 import {selectedCalendarIds} from './google';
 import {channelTokenHash} from './channel-auth';
 import {syncOwnerAvailability} from './availability-sync';
@@ -10,7 +10,10 @@ import {syncOwnerAvailability} from './availability-sync';
 export async function renewCalendarChannels(owner:string){
  const origin=process.env.APP_URL;
  if(!origin||!origin.startsWith('https://'))throw Error('HTTPS APP_URL required');
- const db=adminClient(),access=await ownerAccessToken(owner),ids=await selectedCalendarIds(access);
+ const db=adminClient(),connection=await ownerConnection(owner);
+ // Push channels are Google-only; Outlook calendars are refreshed by this job's regular five-minute run.
+ if(connection.provider!=='google'){const {error}=await db.from('moa_calendar_channels').delete().eq('owner_id',owner);if(error)throw Error('Channel cleanup failed');return}
+ const access=connection.access,ids=await selectedCalendarIds(access);
  const {data:channels,error}=await db.from('moa_calendar_channels').select('*').eq('owner_id',owner);
  if(error)throw Error('Channel storage unavailable');
  let created=0;

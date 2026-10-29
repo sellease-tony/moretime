@@ -2,7 +2,7 @@ import 'server-only';
 import {createServerClient} from '@supabase/ssr';
 import {createClient} from '@supabase/supabase-js';
 import {cookies} from 'next/headers';
-import {HOST_ROLE,isGoogle,isHost} from '@/lib/auth/role';
+import {HOST_ROLE,isOAuthAccount,isHost} from '@/lib/auth/role';
 import type {Consent} from '@/lib/auth/consent';
 
 export function supabaseConfigured(){return !!(process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY&&process.env.SUPABASE_SECRET_KEY)}
@@ -18,16 +18,16 @@ export function adminClient(){
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.SUPABASE_SECRET_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
 }
 // Any Google session, including guests who signed in only to prefill a booking form.
-export async function googleUser(){
+export async function oauthUser(){
   if(!supabaseConfigured())return null;
   const sb=await sessionClient();
   const {data:{user},error}=await sb.auth.getUser();
-  if(error||!user||!isGoogle(user.app_metadata))return null;
+  if(error||!user||!isOAuthAccount(user.app_metadata))return null;
   return user;
 }
 // Host only: required for /app and every owner API.
 export async function currentUser(){
-  const user=await googleUser();
+  const user=await oauthUser();
   return user&&isHost(user.app_metadata)?user:null;
 }
 // Grants the host role; records sign-up consent when the host just agreed (app_metadata keys are merged, so an earlier record stays).

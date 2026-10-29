@@ -5,7 +5,7 @@ import {CalendarCheck,CalendarX,RefreshCw} from 'lucide-react';
 import type {HostUser} from './use-workspace';
 import {legal} from '@/lib/legal';
 type Job={id:string;channel:string;recipient_role?:string;event_type:string;status:string;created_at:string};
-type Status={reminders?:ReminderSettings;configured:boolean;mode:string;calendar?:boolean;jobs?:Job[]};
+type Status={reminders?:ReminderSettings;configured:boolean;mode:string;calendar?:boolean;calendarProvider?:'google'|'microsoft'|null;jobs?:Job[]};
 // What a host needs to know about each email, without delivery-pipeline vocabulary.
 const STATUS:Record<string,[string,'ok'|'wait'|'warn'|'muted']>={accepted:['보냄','ok'],pending:['보내는 중','wait'],processing:['보내는 중','wait'],failed:['보내지 못함','warn'],unknown:['보내지 못함','warn'],blocked:['보내지 못함','warn'],simulated:['테스트 · 발송 안 함','muted'],disabled:['보내지 않음','muted'],expired:['시간이 지나 생략','muted'],superseded:['일정 변경으로 생략','muted']};
 const EVENTS:Record<string,string>={confirmed:'예약 확정 안내',cancelled:'예약 취소 안내',reminder_24h:'하루 전 리마인더',reminder_1h:'1시간 전 리마인더'};
@@ -22,10 +22,10 @@ export default function HostSettings({user}:{user:HostUser}){
   const connected=status?.calendar;
   const jobs=(status?.jobs||[]).filter(j=>j.channel==='email').slice(0,10);
   return <div className="settings-page">
-   <section className="panel settings-card"><h2>Google 계정 및 캘린더</h2>
-    <div className="integration"><span className="google">G</span><div><h3>{user?.email||'Google 계정'}</h3><p>{!status?'연결 상태 확인 중…':connected?<span className="state ok"><CalendarCheck size={15}/>캘린더 연결됨</span>:<span className="state warn"><CalendarX size={15}/>캘린더 연결이 필요합니다</span>}</p></div><a className={connected?'secondary-button':'primary'} href="/auth/google">{connected?'다시 연결':'캘린더 연결'}</a></div>
-    <p className="settings-help">내 캘린더의 바쁜 시간은 예약 가능 시간에서 자동으로 빠지고, 확정된 예약은 내 Google 캘린더에 등록됩니다. 일정 제목이나 내용은 예약자에게 보이지 않습니다.</p>
-    <div className="settings-row"><div><strong>예약이 캘린더에 안 보이나요?</strong><p>모아타임의 예약을 Google 캘린더에 다시 맞춥니다.</p></div><button className="secondary-button" disabled={syncing||!connected} onClick={syncCalendar}><RefreshCw size={15}/>{syncing?'맞추는 중…':'캘린더 다시 맞추기'}</button></div>
+   <section className="panel settings-card"><h2>계정 및 캘린더</h2>
+    <div className="integration">{status?.calendarProvider==='microsoft'?<span aria-hidden="true" className="ms-logo"><i/><i/><i/><i/></span>:<span className="google">G</span>}<div><h3>{user?.email||'내 계정'}</h3><p>{!status?'연결 상태 확인 중…':connected?<span className="state ok"><CalendarCheck size={15}/>캘린더 연결됨</span>:<span className="state warn"><CalendarX size={15}/>캘린더 연결이 필요합니다</span>}</p></div><a className={connected?'secondary-button':'primary'} href="/auth/reconnect">{connected?'다시 연결':'캘린더 연결'}</a></div>
+    <p className="settings-help">내 캘린더의 바쁜 시간은 예약 가능 시간에서 자동으로 빠지고, 확정된 예약은 내 캘린더(Google 또는 Outlook)에 등록됩니다. 일정 제목이나 내용은 예약자에게 보이지 않습니다.</p>
+    <div className="settings-row"><div><strong>예약이 캘린더에 안 보이나요?</strong><p>모아타임의 예약을 내 캘린더에 다시 맞춥니다.</p></div><button className="secondary-button" disabled={syncing||!connected} onClick={syncCalendar}><RefreshCw size={15}/>{syncing?'맞추는 중…':'캘린더 다시 맞추기'}</button></div>
     {syncMessage&&<p className="settings-message" role="status">{syncMessage}</p>}
    </section>
 

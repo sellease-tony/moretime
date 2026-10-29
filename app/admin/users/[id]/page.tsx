@@ -25,7 +25,7 @@ export default async function AdminUser({params}:{params:Promise<{id:string}>}){
    <section className={s.card}><h2>계정</h2><dl className={s.kv}>
     <dt>회원 ID</dt><dd className={s.code}>{r.id}</dd>
     <dt>약관 동의</dt><dd>{r.consentVersion?<>{r.consentVersion} {r.consentVersion!==CONSENT_VERSION&&<span className={s.tagWarn}>이전 버전</span>}</>:<span className={s.tagWarn}>기록 없음</span>}</dd>
-    <dt>Google 캘린더</dt><dd>{r.calendarConnected?(r.calendarError?<><span className={s.tagWarn}>동기화 오류</span><div className={s.muted}>{r.calendarError}</div></>:<span className={s.tagOk}>연결됨</span>):<span className={s.tagWarn}>미연결</span>}</dd>
+    <dt>캘린더</dt><dd>{r.calendarConnected?(r.calendarError?<><span className={s.tagWarn}>동기화 오류</span><div className={s.muted}>{r.calendarError}</div></>:<span className={s.tagOk}>{r.calendarProvider==='microsoft'?'Outlook':'Google'} 연결됨</span>):<span className={s.tagWarn}>미연결</span>}</dd>
     <dt>예약 페이지</dt><dd>활성 {r.activePages} / 전체 {r.pages} · 진행 중 투표 {r.openPolls}</dd>
     <dt>예약</dt><dd>누적 {r.bookings} · 최근 30일 {r.bookings30d} · 예정 {r.upcomingBookings}</dd>
    </dl></section>

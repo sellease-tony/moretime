@@ -7,8 +7,8 @@ export default function Privacy(){
 
   <h2>1. 처리하는 개인정보 항목과 수집 방법</h2>
   <div className={s.tableWrap}><table><thead><tr><th>구분</th><th>항목</th><th>수집 방법</th></tr></thead><tbody>
-   <tr><td>주최자(회원)</td><td>Google 계정 이름, 이메일 주소, 프로필 식별자, Google 캘린더 접근 권한 토큰(암호화 저장)</td><td>Google 로그인</td></tr>
-   <tr><td>주최자 캘린더</td><td>표시 중인 캘린더의 바쁜 시간 구간(시작·종료 시각), 캘린더 목록. 일정 제목·내용·참석자는 수집하지 않습니다.</td><td>Google Calendar API</td></tr>
+   <tr><td>주최자(회원)</td><td>Google 또는 Microsoft 계정 이름, 이메일 주소, 프로필 식별자, 캘린더 접근 권한 토큰(암호화 저장)</td><td>Google·Microsoft 로그인</td></tr>
+   <tr><td>주최자 캘린더</td><td>표시 중인 캘린더의 바쁜 시간 구간(시작·종료 시각), 캘린더 목록. 일정 제목·내용·참석자는 수집하지 않습니다.</td><td>Google Calendar API, Microsoft Graph(Outlook 캘린더)</td></tr>
    <tr><td>예약자</td><td>이름, 이메일 주소, 휴대전화 번호, 회사명(주최자가 요청한 경우), 예약 일시</td><td>예약 화면 입력</td></tr>
    <tr><td>투표 참석자</td><td>이름, 이메일 주소, 가능한 시간 선택</td><td>투표 화면 입력</td></tr>
    <tr><td>자동 수집</td><td>접속 IP(요청 제한용 해시값), 서비스 이용 기록, 쿠키(로그인 세션)</td><td>서비스 이용 과정</td></tr>
@@ -29,12 +29,13 @@ export default function Privacy(){
    <tr><td>Supabase, Inc.</td><td>데이터베이스·로그인 인증 운영</td><td>데이터 저장: 대한민국(서울 리전). 운영·지원 과정에서 미국 등에서 접근 가능 · 네트워크 전송</td><td>1항의 모든 항목</td></tr>
    <tr><td>Vercel, Inc.</td><td>웹 서비스 호스팅</td><td>미국 등 · 네트워크 전송</td><td>서비스 이용 기록, 접속 정보</td></tr>
    <tr><td>Resend</td><td>이메일 발송</td><td>미국 · 네트워크 전송</td><td>수신자 이름·이메일, 예약 일시·미팅명</td></tr>
-   <tr><td>Google LLC</td><td>로그인, 캘린더 연동</td><td>미국 · 네트워크 전송</td><td>주최자 계정 정보, 확정 예약 정보(주최자 캘린더 등록)</td></tr>
+   <tr><td>Google LLC</td><td>로그인, 캘린더 연동(Google 캘린더 사용 시)</td><td>미국 · 네트워크 전송</td><td>주최자 계정 정보, 확정 예약 정보(주최자 캘린더 등록)</td></tr>
+   <tr><td>Microsoft Corporation</td><td>로그인, 캘린더 연동·Teams 회의 링크 생성(Outlook 캘린더 사용 시)</td><td>미국 등 · 네트워크 전송</td><td>주최자 계정 정보, 확정 예약 정보(주최자 캘린더 등록)</td></tr>
   </tbody></table></div>
   <p>국외 이전을 원하지 않는 이용자는 서비스 이용을 중단할 수 있으나, 이 경우 예약 서비스를 이용할 수 없습니다.</p>
 
   <h2>6. Google 사용자 데이터 처리</h2>
-  <p>서비스가 Google API를 통해 받은 정보의 사용과 다른 앱으로의 전송은 Limited Use 요구사항을 포함한 <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API 서비스 사용자 데이터 정책</a>을 준수합니다. 캘린더 정보는 예약 가능 시간 계산과 확정 예약의 캘린더 등록에만 사용하며, 광고에 사용하거나 사람이 열람하지 않습니다. 이용자는 Google 계정 설정에서 언제든 권한을 철회할 수 있습니다.</p>
+  <p>서비스가 Google API를 통해 받은 정보의 사용과 다른 앱으로의 전송은 Limited Use 요구사항을 포함한 <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API 서비스 사용자 데이터 정책</a>을 준수합니다. 캘린더 정보는 예약 가능 시간 계산과 확정 예약의 캘린더 등록에만 사용하며, 광고에 사용하거나 사람이 열람하지 않습니다. 이용자는 Google 계정 설정에서 언제든 권한을 철회할 수 있습니다. Microsoft 계정으로 Outlook 캘린더를 연결한 경우에도 같은 목적과 범위로만 사용하며, Microsoft 계정의 앱 권한 설정에서 언제든 철회할 수 있습니다.</p>
 
   <h2>7. 개인정보의 파기</h2>
   <p>보유 기간이 지나거나 처리 목적이 달성된 개인정보는 지체 없이 복구할 수 없는 방법으로 삭제합니다.</p>
