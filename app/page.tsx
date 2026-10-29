@@ -7,10 +7,10 @@ import {siteUrl} from '@/lib/site';
 import s from './landing.module.css';
 export const metadata:Metadata={
  title:'모아타임 · 일정 조율은 짧게, 좋은 만남은 길게',
- description:'Google 캘린더와 연결하는 일정 예약 서비스 모아타임. 예약 페이지를 만들고 링크를 공유해 커피챗, 상담, 미팅 시간을 간편하게 조율하세요.',
+ description:'Google·Outlook 캘린더와 연결하는 일정 예약 서비스 모아타임. 예약 링크 하나로 커피챗·상담·미팅 시간을 조율하고, Google Meet·Teams 링크까지 자동으로. 무료로 시작하세요.',
  alternates:{canonical:siteUrl},
- openGraph:{type:'website',locale:'ko_KR',url:siteUrl,siteName:'모아타임',title:'일정 조율은 짧게, 좋은 만남은 길게 · 모아타임',description:'가능한 시간을 모아, 예약 링크 하나로. 1:1 예약부터 여러 명 일정 투표까지, Google 캘린더 기반 일정 예약.'},
- twitter:{card:'summary_large_image',title:'모아타임 · 좋은 만남을 위한 시간',description:'가능한 시간을 모아, 예약 링크 하나로.'},
+ openGraph:{type:'website',locale:'ko_KR',url:siteUrl,siteName:'모아타임',title:'일정 조율은 짧게, 좋은 만남은 길게 · 모아타임',description:'가능한 시간을 모아, 예약 링크 하나로. 1:1 예약부터 여러 명 일정 투표까지, Google·Outlook 캘린더 기반 일정 예약.'},
+ twitter:{card:'summary_large_image',title:'모아타임 · 좋은 만남을 위한 시간',description:'가능한 시간을 모아, 예약 링크 하나로. Google·Outlook 캘린더 연동.'},
  robots:{index:true,follow:true}
 };
 const faqs=[
@@ -34,7 +34,7 @@ const allFeatures=[
  [Building2,'회사명 · 미팅 제목','상대 회사명을 받아 미팅 제목을 자동으로 만들어요.'],
 ] as const;
 export default function Landing(){return <div className={s.page}>
-<script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify([{'@context':'https://schema.org','@type':'WebSite',name:'모아타임',url:siteUrl,inLanguage:'ko-KR',description:'Google 캘린더 기반 일정 예약 서비스'},{'@context':'https://schema.org','@type':'SoftwareApplication',name:'모아타임',applicationCategory:'BusinessApplication',operatingSystem:'Web',url:siteUrl,offers:plans.map(p=>({'@type':'Offer',name:p.name,price:p.monthly,priceCurrency:'KRW'}))}]).replace(/</g,'\\u003c')}}/>
+<script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify([{'@context':'https://schema.org','@type':'WebSite',name:'모아타임',alternateName:['moretime','MoreTime'],url:siteUrl,inLanguage:'ko-KR',description:'Google·Outlook(Microsoft 365) 캘린더 기반 일정 예약 서비스'},{'@context':'https://schema.org','@type':'SoftwareApplication',name:'모아타임',applicationCategory:'BusinessApplication',operatingSystem:'Web',url:siteUrl,offers:plans.map(p=>({'@type':'Offer',name:p.name,price:p.monthly,priceCurrency:'KRW'}))}]).replace(/</g,'\\u003c')}}/>
 <a className={s.skip} href="#main">본문으로 건너뛰기</a>
 <header className={s.header}><a className={s.brand} href="/" aria-label="모아타임 홈"><span className={s.mark}><CalendarDays size={21}/></span>모아타임<span className={s.brandDot}>.</span></a><nav className={s.nav} aria-label="메인 메뉴"><a href="#features">서비스 소개</a><a href="#how">이용 방법</a><a href="#pricing">요금제</a><a href="#faq">자주 묻는 질문</a></nav><div className={s.navActions}><a href="/login">로그인</a><a className={s.smallCta} href="/login">회원가입 <ArrowUpRight size={15}/></a></div></header>
 <main id="main" className={s.main}>
