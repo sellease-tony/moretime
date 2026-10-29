@@ -1,7 +1,10 @@
 import {overlaps,type Busy} from './calendar/google';
+// bufferBefore/bufferAfter: minutes kept free before and after each meeting on the page (copied onto bookings).
 // minNoticeHours: guests cannot book a slot starting sooner than this. dailyLimit: at most this many confirmed
 // bookings per day on the page (0 or unset = no limit). The database enforces both again on insert.
-export type Availability={days:Record<string,string[]>;source:'manual'|'google';updatedAt:string;importedAt?:string;includeWeekends?:boolean;includeLunch?:boolean;meetingMode?:'online'|'offline';excludeHolidays?:boolean;minNoticeHours?:number;dailyLimit?:number};
+export type Availability={days:Record<string,string[]>;source:'manual'|'google';updatedAt:string;importedAt?:string;includeWeekends?:boolean;includeLunch?:boolean;meetingMode?:'online'|'offline';excludeHolidays?:boolean;minNoticeHours?:number;dailyLimit?:number;bufferBefore?:number;bufferAfter?:number};
+// Buffers are copied onto each booking so later page edits never change an existing booking's protected time.
+export function bufferFields(a:Availability|undefined){const f:{bufferBefore?:number;bufferAfter?:number}={};if(a?.bufferBefore)f.bufferBefore=a.bufferBefore;if(a?.bufferAfter)f.bufferAfter=a.bufferAfter;return f}
 // Confirmed bookings per day for one page, used for the daily limit.
 export type DayCounts=Record<string,number>;
 export function kstDay(now=new Date()){return new Date(now.getTime()+9*3600000).toISOString().slice(0,10)}
@@ -10,7 +13,7 @@ export function addDays(day:string,n:number){return new Date(Date.parse(day+'T00
 export function savedSlots(availability:Availability|undefined,day:string,duration:number,busy:Busy[],now=new Date()){
   return [...new Set(availability?.days[day]||[])].filter(time=>{
     const start=new Date(`${day}T${time}:00+09:00`),end=new Date(start.getTime()+duration*60000);
-    return (Number(time.slice(0,2))*60+Number(time.slice(3)))%duration===0&&permitsTime(availability,day,time,duration)&&start>now&&!overlaps(start.toISOString(),end.toISOString(),busy,availability?.meetingMode==='offline'?60:0);
+    return (Number(time.slice(0,2))*60+Number(time.slice(3)))%duration===0&&permitsTime(availability,day,time,duration)&&start>now&&!overlaps(start.toISOString(),end.toISOString(),busy,availability?.meetingMode==='offline'?60:0,{before:availability?.bufferBefore,after:availability?.bufferAfter});
   }).sort();
 }
 // What a guest can book right now: saved slots after the minimum notice, and none once the day is full.

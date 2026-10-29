@@ -1,4 +1,5 @@
-export type Busy={start:string;end:string;bufferMinutes?:number};
+// bufferBefore/bufferAfter: minutes a booking keeps free before and after itself (the host's page buffers).
+export type Busy={start:string;end:string;bufferMinutes?:number;bufferBefore?:number;bufferAfter?:number};
 export class CalendarError extends Error{}
 export async function selectedCalendarIds(accessToken:string,fetcher:typeof fetch=fetch):Promise<string[]>{
   // Selected calendars, including the primary calendar; paginate instead of silently ignoring others.
@@ -33,7 +34,8 @@ export async function queryGoogleBusy(accessToken:string,start:string,end:string
   }
   return busy;
 }
-export function overlaps(start:string,end:string,busy:Busy[],bufferMinutes=0){const s=Date.parse(start),e=Date.parse(end);return busy.some(b=>{const gap=Math.max(bufferMinutes,b.bufferMinutes||0)*60000;return s<Date.parse(b.end)+gap&&e>Date.parse(b.start)-gap})}
+// The gap before a slot is the larger of its own lead buffer and the busy span's trailing buffer (and vice versa).
+export function overlaps(start:string,end:string,busy:Busy[],bufferMinutes=0,own:{before?:number;after?:number}={}){const s=Date.parse(start),e=Date.parse(end);return busy.some(b=>{const sym=Math.max(bufferMinutes,b.bufferMinutes||0),before=Math.max(sym,own.before||0,b.bufferAfter||0)*60000,after=Math.max(sym,own.after||0,b.bufferBefore||0)*60000;return s<Date.parse(b.end)+before&&e>Date.parse(b.start)-after})}
 export function availableSlots(day:string,duration:number,hours:boolean[],range:string[],busy:Busy[],now=new Date(),bufferMinutes=0){
   if(!hours[new Date(day+'T12:00:00+09:00').getUTCDay()])return [];
   const minutes=(s:string)=>Number(s.slice(0,2))*60+Number(s.slice(3)),slots:string[]=[];

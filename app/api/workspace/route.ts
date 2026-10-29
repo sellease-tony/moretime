@@ -1,3 +1,4 @@
+import {bufferFields} from '@/lib/availability';
 import {allowRequest} from '@/lib/rate-limit/server';
 import {meetingFields} from '@/lib/bookings/meeting';
 import {syncOwnerAvailability,currentCalendarConstraints} from '@/lib/calendar/availability-sync';
@@ -66,7 +67,7 @@ export async function POST(request:Request){
       for(const e of emails){const {count,error:limitError}=await db.from('moa_bookings').select('id',{head:true,count:'exact'}).eq('payload->>email',e).gte('created_at',new Date(Date.now()-86400000).toISOString());if(limitError)throw Error('storage');if((count||0)>=20)return json({error:'같은 이메일로 하루에 만들 수 있는 예약 수를 넘었습니다.'},429)}
     }
     for(const b of bookings){if(!old.some(o=>o.id===b.id))try{
-      const event=state.events.find((e:{id:string})=>e.id===b.eventId);if(event)Object.assign(b,meetingFields(event,b.company),{meetingMode:event.availability?.meetingMode||'online'});
+      const event=state.events.find((e:{id:string})=>e.id===b.eventId);if(event)Object.assign(b,meetingFields(event,b.company),{meetingMode:event.availability?.meetingMode||'online'},bufferFields(event.availability));
       validateNewBooking(b,state);
 
     }catch(e){return json({error:e instanceof Error?e.message:'예약할 수 없습니다.'},400)}}

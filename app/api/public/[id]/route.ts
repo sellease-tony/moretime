@@ -3,7 +3,7 @@ import {publicMessage} from '@/lib/errors';
 import {meetingFields} from '@/lib/bookings/meeting';
 import {managementUrl} from '@/lib/bookings/manage-token';
 import {guestContactSchema} from '@/lib/bookings/guest';
-import {monthSlots,bookableSlots,dayCounts,kstDay,addDays,nextAvailableDay} from '@/lib/availability';
+import {monthSlots,bookableSlots,dayCounts,kstDay,addDays,nextAvailableDay,bufferFields} from '@/lib/availability';
 import {syncBooking} from '@/lib/calendar/sync';
 import {after} from 'next/server';
 import {oauthUser,adminClient,supabaseConfigured} from '@/lib/supabase/server';
@@ -59,7 +59,7 @@ export async function POST(request:Request,context:Context){
     if(!slots.includes(body.time))return json({error:'해당 시간에 다른 일정이 있습니다. 다른 시간을 선택해 주세요.'},409);
     let fields;try{fields=meetingFields(event,body.company)}catch{return json({error:'회사명을 확인해 주세요. 필수인 경우 80자 이내로 입력해 주세요.'},400)}
     let answers;try{answers=collectAnswers(event.questions,body.answers)}catch(e){return json({error:publicMessage(e,'질문 답변을 확인해 주세요.')},400)}
-    const parsed=bookingSchema.safeParse({...fields,...(answers.length?{answers}:{}),meetingMode:event.availability?.meetingMode||'online',id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:['email'],notificationConsent:body.notificationConsent===true});
+    const parsed=bookingSchema.safeParse({...fields,...(answers.length?{answers}:{}),...bufferFields(event.availability),meetingMode:event.availability?.meetingMode||'online',id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:['email'],notificationConsent:body.notificationConsent===true});
     if(!parsed.success)return json({error:parsed.error.issues[0].message},400);
     const booking=parsed.data;
     const db=adminClient();
