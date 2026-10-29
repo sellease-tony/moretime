@@ -47,7 +47,3 @@ button:focus-visible,a:focus-visible{outline-color:var(--primary)}
 .settings-title{display:flex;justify-content:space-between;align-items:center}.settings-title button{color:var(--text-secondary);padding:6px}
 .sent-list{list-style:none;margin:10px 0 0;padding:0}.sent-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--brand-soft)}.sent-list strong{display:block;font-size:13px;font-weight:600}.sent-list small{font-size:12px;color:var(--text-secondary)}
 @media(max-width:720px){.settings-row{flex-direction:column;align-items:stretch}.settings-row .secondary-button{justify-content:center}.settings-card .integration{flex-wrap:wrap}.settings-card .integration .primary,.settings-card .integration .secondary-button{margin-left:0;width:100%;justify-content:center}}
-.signup-consent>a.microsoft-button{margin-top:10px}
-.ms-logo{display:inline-grid!important;grid-template-columns:8px 8px;gap:2px;font-size:0!important}.ms-logo i{width:8px;height:8px;display:block}
-.ms-logo i:nth-child(1){background:#f25022}.ms-logo i:nth-child(2){background:#7fba00}.ms-logo i:nth-child(3){background:#00a4ef}.ms-logo i:nth-child(4){background:#ffb900}
-.provider-hint{display:block;text-align:center;font-size:11px;color:var(--text-secondary);margin-top:10px;line-height:1.6}

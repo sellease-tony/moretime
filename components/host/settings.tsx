@@ -1,4 +1,5 @@
 "use client";
+import {GoogleLogo,MicrosoftLogo} from '@/components/brand-logos';
 import {useEffect,useState} from 'react';
 import {defaultReminders,type ReminderSettings} from '@/lib/notifications/reminders';
 import {CalendarCheck,CalendarX,RefreshCw} from 'lucide-react';
@@ -23,7 +24,7 @@ export default function HostSettings({user}:{user:HostUser}){
   const jobs=(status?.jobs||[]).filter(j=>j.channel==='email').slice(0,10);
   return <div className="settings-page">
    <section className="panel settings-card"><h2>계정 및 캘린더</h2>
-    <div className="integration">{status?.calendarProvider==='microsoft'?<span aria-hidden="true" className="ms-logo"><i/><i/><i/><i/></span>:<span className="google">G</span>}<div><h3>{user?.email||'내 계정'}</h3><p>{!status?'연결 상태 확인 중…':connected?<span className="state ok"><CalendarCheck size={15}/>캘린더 연결됨</span>:<span className="state warn"><CalendarX size={15}/>캘린더 연결이 필요합니다</span>}</p></div><a className={connected?'secondary-button':'primary'} href="/auth/reconnect">{connected?'다시 연결':'캘린더 연결'}</a></div>
+    <div className="integration"><span style={{display:'inline-flex',padding:8,borderRadius:10,border:'1px solid var(--border)'}}>{status?.calendarProvider==='microsoft'?<MicrosoftLogo size={22}/>:<GoogleLogo size={22}/>}</span><div><h3>{user?.email||'내 계정'}</h3><p>{!status?'연결 상태 확인 중…':connected?<span className="state ok"><CalendarCheck size={15}/>캘린더 연결됨</span>:<span className="state warn"><CalendarX size={15}/>캘린더 연결이 필요합니다</span>}</p></div><a className={connected?'secondary-button':'primary'} href="/auth/reconnect">{connected?'다시 연결':'캘린더 연결'}</a></div>
     <p className="settings-help">내 캘린더의 바쁜 시간은 예약 가능 시간에서 자동으로 빠지고, 확정된 예약은 내 캘린더(Google 또는 Outlook)에 등록됩니다. 일정 제목이나 내용은 예약자에게 보이지 않습니다.</p>
     <div className="settings-row"><div><strong>예약이 캘린더에 안 보이나요?</strong><p>모아타임의 예약을 내 캘린더에 다시 맞춥니다.</p></div><button className="secondary-button" disabled={syncing||!connected} onClick={syncCalendar}><RefreshCw size={15}/>{syncing?'맞추는 중…':'캘린더 다시 맞추기'}</button></div>
     {syncMessage&&<p className="settings-message" role="status">{syncMessage}</p>}
