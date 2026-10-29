@@ -1,3 +1,4 @@
+import {collectAnswers} from '@/lib/bookings/questions';
 import {publicMessage} from '@/lib/errors';
 import {meetingFields} from '@/lib/bookings/meeting';
 import {managementUrl} from '@/lib/bookings/manage-token';
@@ -30,7 +31,7 @@ export async function GET(request:Request,context:Context){
     const [user,{data:hostUser}]=await Promise.all([googleUser(),adminClient().auth.admin.getUserById(target.owner_id)]);
     const hostName=String(hostUser?.user?.user_metadata?.full_name||hostUser?.user?.user_metadata?.name||'').slice(0,80)||null;
     const today=kstDay(),nextDay=Object.values(days).some(s=>s.length)?null:nextAvailableDay(event.availability,today,addDays(today,90),event.duration,owner.busy,new Date(),taken);
-    return json({event:{title:event.title,desc:event.desc,duration:event.duration,meetingMode:event.availability?.meetingMode||'online',hostName,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate},nextDay,slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
+    return json({event:{title:event.title,desc:event.desc,duration:event.duration,meetingMode:event.availability?.meetingMode||'online',hostName,companyMode:event.companyMode||'hidden',meetingTitleTemplate:event.meetingTitleTemplate,questions:event.questions||[]},nextDay,slots,days,availabilityReady:!!event.availability,mode:notificationMode(),user:user?{name:user.user_metadata.full_name||user.email,email:user.email}:null});
   }catch(e){return json({error:publicMessage(e,'예약 페이지를 불러오지 못했습니다.')},503)}
 }
 export async function POST(request:Request,context:Context){
@@ -38,7 +39,7 @@ export async function POST(request:Request,context:Context){
   if(!supabaseConfigured())return json({error:'서비스 연결 설정이 필요합니다.'},503);
   try{
     const target=await link((await context.params).id);if(!target)return json({error:'예약 페이지를 찾을 수 없습니다.'},404);
-    const text=await request.text();if(text.length>5000)return json({error:'요청이 너무 큽니다.'},413);
+    const text=await request.text();if(text.length>12000)return json({error:'요청이 너무 큽니다.'},413);
     let body;try{body=JSON.parse(text)}catch{return json({error:'입력값을 확인해 주세요.'},400)}
     const contact=guestContactSchema.safeParse(body);
     if(!contact.success)return json({error:contact.error.issues[0].message},400);
@@ -57,7 +58,8 @@ export async function POST(request:Request,context:Context){
     const {slots,event,data}=await slotsFor(target.owner_id,target.event_id,body.day);
     if(!slots.includes(body.time))return json({error:'해당 시간에 다른 일정이 있습니다. 다른 시간을 선택해 주세요.'},409);
     let fields;try{fields=meetingFields(event,body.company)}catch{return json({error:'회사명을 확인해 주세요. 필수인 경우 80자 이내로 입력해 주세요.'},400)}
-    const parsed=bookingSchema.safeParse({...fields,meetingMode:event.availability?.meetingMode||'online',id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:['email'],notificationConsent:body.notificationConsent===true});
+    let answers;try{answers=collectAnswers(event.questions,body.answers)}catch(e){return json({error:publicMessage(e,'질문 답변을 확인해 주세요.')},400)}
+    const parsed=bookingSchema.safeParse({...fields,...(answers.length?{answers}:{}),meetingMode:event.availability?.meetingMode||'online',id:body.id,eventId:event.id,title:event.title,duration:event.duration,day:body.day,time:body.time,name,email,phone,channels:['email'],notificationConsent:body.notificationConsent===true});
     if(!parsed.success)return json({error:parsed.error.issues[0].message},400);
     const booking=parsed.data;
     const db=adminClient();

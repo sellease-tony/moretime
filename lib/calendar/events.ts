@@ -1,10 +1,11 @@
 import {displayMeeting} from '../bookings/meeting';
+import {answersText,type Answer} from '../bookings/questions';
 import {CalendarError} from './google';
-export type CalendarBooking={id:string;title:string;meetingTitle?:string;name:string;email:string;day:string;time:string;duration:number;meetingMode?:'online'|'offline';hostLink?:string};
+export type CalendarBooking={id:string;title:string;meetingTitle?:string;name:string;email:string;day:string;time:string;duration:number;meetingMode?:'online'|'offline';hostLink?:string;answers?:Answer[]};
 export type CalendarSyncResult={meetUrl?:string};
 // The host's own sign-in-protected page for this booking. Never the guest's management link: host calendars are
 // often shared with teammates, and that link lets anyone holding it change or cancel the booking.
-const describe=(b:CalendarBooking)=>`모아타임 예약\n예약자: ${b.name}\n이메일: ${b.email}`+(b.hostLink?`\n\n예약 변경·취소(주최자 로그인 필요): ${b.hostLink}`:'');
+const describe=(b:CalendarBooking)=>`모아타임 예약\n예약자: ${b.name}\n이메일: ${b.email}`+(b.answers?.length?'\n\n'+answersText(b.answers):'')+(b.hostLink?`\n\n예약 변경·취소(주최자 로그인 필요): ${b.hostLink}`:'');
 export const calendarEventId=(id:string)=>'moa'+id.replaceAll('-','').toLowerCase();
 const meetLink=(event:{hangoutLink?:string;conferenceData?:{entryPoints?:{entryPointType?:string;uri?:string}[]}}|null)=>event?.hangoutLink||event?.conferenceData?.entryPoints?.find(e=>e.entryPointType==='video')?.uri||undefined;
 // Stable IDs make retries safe even when Google accepted a request but the response was lost.

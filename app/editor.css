@@ -13,3 +13,20 @@
 .event-editor .availability-calendar .calendar{gap:4px}.event-editor .availability-calendar .calendar button{aspect-ratio:auto;height:34px;min-height:34px;border-radius:8px}.event-editor .availability-calendar .calendar small{padding:5px 0}.event-editor .availability-calendar .month{margin-bottom:8px}.event-editor .calendar-legend{margin:8px 0!important}.event-editor .editor-description{display:block}.event-editor .editor-description small{margin-left:6px}.event-editor .editor-description textarea{display:block;margin-top:7px}
 .booking-rules{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 0}.booking-rules label{display:flex;flex-direction:column;gap:8px;color:var(--text-secondary);font-size:14px}.booking-rules p{grid-column:1/-1;margin:0;font-size:12px}@media(max-width:640px){.booking-rules{grid-template-columns:1fr}}
 .booking-rules{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 0}.booking-rules label{display:flex;flex-direction:column;gap:8px;color:var(--text-secondary);font-size:14px}.booking-rules p{grid-column:1/-1;margin:0;font-size:12px}@media(max-width:640px){.booking-rules{grid-template-columns:1fr}}
+
+/* Booking-page questions (editor) and answers (guest form, host bookings). */
+.questions-help{font-size:12px!important;margin:4px 0 10px!important;line-height:1.6}
+.question-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;gap:6px;align-items:center;margin-bottom:8px}
+.question-row input:not([type=checkbox]),.question-row select{padding:9px 10px;font-size:13px}
+.question-row>button{border:1px solid var(--border);border-radius:7px;padding:8px;color:var(--text-secondary)}
+.question-row>button:hover:not(:disabled){color:var(--primary);border-color:var(--brand-tint)}
+.question-required{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:5px;margin:0!important;font-size:12px;white-space:nowrap}
+.question-add{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--primary);padding:6px 2px}
+.question-answer{display:flex;flex-direction:column;gap:9px;margin:18px 0}
+.question-answer textarea{resize:vertical;min-height:80px}
+.booking-answers{margin-top:8px;font-size:12px}
+.booking-answers summary{cursor:pointer;color:var(--primary);font-weight:600}
+.booking-answers dl{margin:8px 0 0;display:grid;gap:8px;padding:10px 12px;border-radius:8px;background:var(--surface-subtle);border:1px solid var(--brand-soft)}
+.booking-answers dt{font-weight:600;color:var(--brand-ink)}
+.booking-answers dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text-secondary)}
+@media(max-width:720px){.question-row{grid-template-columns:minmax(0,1fr) auto auto auto}.question-row>input:not([type=checkbox]){grid-column:1/-1}}

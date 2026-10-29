@@ -1,3 +1,4 @@
+import {answersText} from '@/lib/bookings/questions';
 import {displayMeeting} from '../bookings/meeting';
 import {isReminder} from './reminders';
 import {managementUrl} from '@/lib/bookings/manage-token';
@@ -16,6 +17,8 @@ export function integrationStatus(e:Environment=process.env){return {
   scheduler:!!e.CRON_SECRET,
 }}
 export function noticeSubject(j:NoticeJob){return isReminder(j.event_type)?(j.event_type==='reminder_24h'?'예약 하루 전 알림':'예약 1시간 전 알림'):j.event_type==='confirmed'?(j.payload.previousDay?'예약 변경':'예약 확정'):'예약 취소'}
+// The host sees what the guest wrote in the booking questions; guests already know their own answers.
+const answersLine=(j:NoticeJob)=>j.recipient_role==='host'&&j.event_type==='confirmed'&&j.payload.answers?.length?'\n\n질문 응답\n'+answersText(j.payload.answers):'';
 // Online bookings carry the Google Meet link created with the host's calendar event (never on cancellations).
 const meetLine=(j:NoticeJob)=>j.payload.meetUrl&&j.event_type!=='cancelled'?`\n화상 회의(Google Meet): ${j.payload.meetUrl}`:'';
 export function noticeText(j:NoticeJob){
@@ -25,7 +28,7 @@ export function noticeText(j:NoticeJob){
   // A host-initiated change (e.g. agreed by phone) says so, so the guest knows why the time moved.
   const byHost=state==='변경'&&j.payload.changedBy==='host';
   const intro=j.recipient_role==='host'?`${j.payload.name}님의 예약이 ${byHost?'주최자 요청으로 ':''}${state}되었습니다.\n예약자 이메일: ${j.payload.email}`:byHost?`${j.payload.name}님, 주최자 요청으로 예약 일정이 변경되었습니다. 새 일정을 확인해 주세요.`:`${j.payload.name}님, 예약이 ${state}되었습니다.`;
-  return `[모아타임] 예약 ${state}\n${intro}\n일정: ${displayMeeting(j.payload)}\n일시: ${j.payload.day} ${j.payload.time} (한국시간)\n소요 시간: ${j.payload.duration}분${j.payload.previousDay?`\n변경 전: ${j.payload.previousDay} ${j.payload.previousTime} (한국시간)`:""}${meetLine(j)}`;
+  return `[모아타임] 예약 ${state}\n${intro}\n일정: ${displayMeeting(j.payload)}\n일시: ${j.payload.day} ${j.payload.time} (한국시간)\n소요 시간: ${j.payload.duration}분${j.payload.previousDay?`\n변경 전: ${j.payload.previousDay} ${j.payload.previousTime} (한국시간)`:""}${meetLine(j)}${answersLine(j)}`;
 }
 export function solapiMessage(j:NoticeJob,e:Environment){
   if(j.channel==='sms')return {to:j.destination,from:e.SOLAPI_FROM!,text:noticeText(j),type:'LMS' as const,subject:j.event_type==='confirmed'?'예약 확정 안내':'예약 취소 안내'};
