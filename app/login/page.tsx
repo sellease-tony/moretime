@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import {redirect} from 'next/navigation';
 import {CalendarDays,ArrowLeft,ShieldCheck} from 'lucide-react';
-import SignupConsent from '@/components/signup-consent';
+import SignInButtons from '@/components/sign-in-buttons';
 import {currentUser,supabaseConfigured} from '@/lib/supabase/server';
 import s from '../landing.module.css';
 export const metadata:Metadata={title:'로그인 및 회원가입 · 모아타임',robots:{index:false,follow:false}};
@@ -9,5 +9,5 @@ export default async function Login({searchParams}:{searchParams:Promise<{auth_e
  const {auth_error}=await searchParams;
  if(await currentUser()&&!auth_error)redirect('/app');
  const configured=supabaseConfigured();
- return <div className={s.loginPage}><a className={s.back} href="/"><ArrowLeft size={16}/>모아타임 홈으로</a><main className={s.loginCard}><span className={s.mark}><CalendarDays size={28}/></span><p className={s.eyebrow}>WELCOME TO MOATIME</p><h1>좋은 만남의 시작,<br/>모아타임과 함께.</h1><p>Google 또는 Microsoft 계정으로 로그인하고<br/>나만의 예약 페이지를 만들어보세요.</p>{auth_error&&<p className={s.error} role="alert">{auth_error==='microsoft'?'Microsoft 로그인을 완료하지 못했습니다. 회사 계정이라면 IT 관리자가 외부 앱 사용을 막아 두었을 수 있습니다. 잠시 후 다시 시도하거나 Google 계정으로 시작해 주세요.':auth_error==='consent'?'이용약관과 개인정보 수집·이용에 동의한 뒤 시작할 수 있습니다.':auth_error==='calendar'?'캘린더 연결을 완료하지 못했습니다. 다시 연결해 주세요.':'Google 로그인을 완료하지 못했습니다. 서비스의 Google 연결 설정이 아직 준비 중이거나 인증이 취소되었습니다.'}</p>}{configured?<SignupConsent buttonClass={s.googleButton}/>:<p className={s.error} role="status">Google 로그인 연결을 준비하고 있습니다. 설정이 완료되면 이곳에서 시작할 수 있습니다.</p>}<small>처음 방문하셨나요? 로그인하면 회원가입이 함께 진행됩니다.</small><div className={s.loginNote}><ShieldCheck size={18}/><span>예약 가능한 시간을 확인하기 위해<br/>주최자의 캘린더(Google 또는 Outlook) 조회·일정 등록 권한을 요청합니다.</span></div><p className={s.loginLegal}><a href="/terms">이용약관</a> · <a href="/privacy"><strong>개인정보 처리방침</strong></a></p></main></div>;
+ return <div className={s.loginPage}><a className={s.back} href="/"><ArrowLeft size={16}/>모아타임 홈으로</a><main className={s.loginCard}><span className={s.mark}><CalendarDays size={28}/></span><p className={s.eyebrow}>WELCOME TO MOATIME</p><h1>좋은 만남의 시작,<br/>모아타임과 함께.</h1><p>Google 또는 Microsoft 계정으로 로그인하고<br/>나만의 예약 페이지를 만들어보세요.</p>{auth_error&&<p className={s.error} role="alert">{auth_error==='microsoft'?'Microsoft 로그인을 완료하지 못했습니다. 회사 계정이라면 IT 관리자가 외부 앱 사용을 막아 두었을 수 있습니다. 잠시 후 다시 시도하거나 Google 계정으로 시작해 주세요.':auth_error==='consent'?'이용약관과 개인정보 수집·이용에 동의한 뒤 시작할 수 있습니다.':auth_error==='signup_expired'?'가입 시간이 지났습니다. 다시 로그인해 가입을 마무리해 주세요.':auth_error==='calendar'?'캘린더 연결을 완료하지 못했습니다. 다시 연결해 주세요.':'Google 로그인을 완료하지 못했습니다. 서비스의 Google 연결 설정이 아직 준비 중이거나 인증이 취소되었습니다.'}</p>}{configured?<SignInButtons buttonClass={s.googleButton}/>:<p className={s.error} role="status">Google 로그인 연결을 준비하고 있습니다. 설정이 완료되면 이곳에서 시작할 수 있습니다.</p>}<small>처음 방문하셨다면 로그인 후 약관에 동의하면 가입이 완료됩니다.</small><div className={s.loginNote}><ShieldCheck size={18}/><span>예약 가능한 시간을 확인하기 위해<br/>주최자의 캘린더(Google 또는 Outlook) 조회·일정 등록 권한을 요청합니다.</span></div><p className={s.loginLegal}><a href="/terms">이용약관</a> · <a href="/privacy"><strong>개인정보 처리방침</strong></a></p></main></div>;
 }
