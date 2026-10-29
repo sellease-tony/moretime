@@ -58,6 +58,8 @@ export async function POST(request:Request){
     }
     if(changes.events){try{const constraints=await currentCalendarConstraints(user.id);state=applyCalendarBusy(state,constraints.busy,new Date(),true,constraints.holidays)}catch{return json({error:'Google 캘린더를 확인하지 못했습니다. 다시 연결한 후 저장해 주세요.'},503)}}
     if(new Set(state.events.map((e:{id:string})=>e.id)).size!==state.events.length)return json({error:'예약 페이지 ID가 중복되었습니다.'},400);
+    const slugs=state.events.map((e:{slug?:string})=>e.slug).filter(Boolean);
+    if(new Set(slugs).size!==slugs.length)return json({error:'다른 예약 페이지와 같은 페이지 주소입니다. 주소를 바꿔 주세요.'},400);
     // Hosts add bookings one at a time from the app; cap additions and recipients so a host account cannot be used to mass-mail.
     const added=bookings.filter(b=>!old.some(o=>o.id===b.id));
     if(added.length>3)return json({error:'한 번에 최대 3건까지 예약을 추가할 수 있습니다.'},400);

@@ -30,3 +30,12 @@
 .booking-answers dt{font-weight:600;color:var(--brand-ink)}
 .booking-answers dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text-secondary)}
 @media(max-width:720px){.question-row{grid-template-columns:minmax(0,1fr) auto auto auto}.question-row>input:not([type=checkbox]){grid-column:1/-1}}
+
+/* Personal booking address (settings) and per-page address (editor). */
+.slug-input,.handle-form label{display:flex;align-items:stretch;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
+.slug-input>span,.handle-form label>span{display:flex;align-items:center;padding:0 10px;background:var(--surface-subtle);color:var(--text-secondary);font-size:12px;white-space:nowrap;border-right:1px solid var(--border)}
+.slug-input input,.handle-form input{border:0!important;border-radius:0;flex:1;min-width:0;padding:10px}
+.slug-input input:focus,.handle-form input:focus{outline:none}
+.slug-input:focus-within,.handle-form label:focus-within{outline:2px solid var(--brand-tint)}
+.handle-form{display:flex;gap:8px;margin-top:14px}.handle-form label{flex:1;min-width:0}
+@media(max-width:720px){.handle-form{flex-direction:column}.slug-input>span,.handle-form label>span{max-width:55%;overflow:hidden;text-overflow:ellipsis}}

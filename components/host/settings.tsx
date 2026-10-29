@@ -1,4 +1,5 @@
 "use client";
+import HandleSettings from './handle-settings';
 import {GoogleLogo,MicrosoftLogo} from '@/components/brand-logos';
 import {useEffect,useState} from 'react';
 import {defaultReminders,type ReminderSettings} from '@/lib/notifications/reminders';
@@ -30,6 +31,7 @@ export default function HostSettings({user}:{user:HostUser}){
     {syncMessage&&<p className="settings-message" role="status">{syncMessage}</p>}
    </section>
 
+   <HandleSettings/>
    <section className="panel settings-card"><h2>이메일 알림</h2><p className="settings-help">예약이 확정·변경·취소되면 예약자와 나에게 바로 이메일을 보냅니다.</p>
     {error&&<p className="settings-message" role="alert">{error} <button className="link-button" onClick={load}>다시 시도</button></p>}
     <fieldset disabled={!status||saving} className="settings-options"><legend>예약 전 리마인더</legend>
